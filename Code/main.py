@@ -83,7 +83,7 @@ class StereoCamera:
         if not ret:
             print("Failed to grab frame")
             return None
-        self.cam.imshow(f"{self.camPos}", frame)
+        cv2.imshow(f"{self.camPos}", frame)
         self.writer.write(frame)
         # return frame
 
