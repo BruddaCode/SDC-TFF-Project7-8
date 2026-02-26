@@ -26,7 +26,7 @@ class cameraReader:
 class main:
     cap = []
 
-    for camera_info in ec(cv.CAP_MSMF):
+    for camera_info in ec():
         print(camera_info)
         if "logitech" in camera_info.name.lower():
             cap.append(cv.VideoCapture(camera_info.index, camera_info.backend))
