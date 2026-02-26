@@ -26,18 +26,16 @@ class cameraReader:
 class main:
     cap = []
 
-    for camera_info in ec(cv.CAP_MSMF):
+    for camera_info in ec():
         print(camera_info)
         if "logitech" in camera_info.name.lower():
-            cap.append(cv.VideoCapture(camera_info.index, camera_info.backend))
+            cap.append(cv.VideoCapture(int(str(camera_info.index)[-1]), camera_info.backend))
 
     fourcc = cv.VideoWriter_fourcc(*'XVID')
     out = cv.VideoWriter('output.avi', fourcc, 20.0, (640,  480))
     for c in cap:
         if not c.isOpened():
             print("Cannot open camera")
-            print(c.index)
-            exit()
 
     cameras = []
     output = ['output1.avi', 'output2.avi', 'output3.avi']
