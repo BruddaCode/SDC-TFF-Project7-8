@@ -36,7 +36,7 @@ class main:
     for c in cap:
         if not c.isOpened():
             print("Cannot open camera")
-            print(c.index)
+            # print(c.index)
             exit()
 
     cameras = []
