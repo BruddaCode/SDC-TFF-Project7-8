@@ -103,9 +103,9 @@ def getCameraId(cameraName):
 if __name__ == "__main__":
     ids = getCameraId("logitech")
     names = ["left", "middle", "right"]
-    
     cams = []
-    for id, name in ids, names:
+    
+    for id, name in zip(ids, names):
         cams.append(StereoCamera(id, name))
 
     while True:
