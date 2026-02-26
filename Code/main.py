@@ -103,11 +103,14 @@ def getCameraId(cameraName):
 if __name__ == "__main__":
     ids = getCameraId("logitech")
     names = ["left", "middle", "right"]
-    cams = []
+    camL = StereoCamera(ids[0], names[0])
+    camM = StereoCamera(ids[1], names[1])
+    camR = StereoCamera(ids[2], names[2])
     
-    for id, name in zip(ids, names):
-        cams.append(StereoCamera(id, name))
-
     while True:
-        for cam in cams:
-            cam.get_frame()
+        camL.get_frame()
+        camM.get_frame()
+        camR.get_frame()
+        
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
