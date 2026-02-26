@@ -175,7 +175,8 @@ def view_lidar(port: str, min_distance: float) -> None:
     fig, ax = plt.subplots(figsize=(8, 8))
     fig.canvas.manager.set_window_title("LiDAR Viewer")
 
-    angles = np.linspace(0, 2 * np.pi, 360)
+    # angles = np.linspace(0, 2 * np.pi, 360)
+    angles = np.linspace(0, 2 * np.pi, 360) + np.pi/2
 
     print("[PLOT] Live weergave gestart. Sluit het venster of druk Ctrl+C om te stoppen.")
 
