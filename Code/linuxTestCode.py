@@ -1,5 +1,5 @@
 """
-Standalone LiDAR viewer voor Ubuntu/Linux met objectdetectie, tracking en logging.
+Standalone LiDAR viewer voor Ubuntu/Linux met objectdetectie en logging (zonder ID’s).
 
 Vereisten:
     pip install rplidar-roboticia numpy matplotlib pyserial
@@ -156,44 +156,12 @@ def detect_objects(distances, angles, max_distance=3000, min_cluster_size=3):
     return centroids
 
 # ---------------------------------------------------------------------------
-# Objecttracking
-# ---------------------------------------------------------------------------
-class ObjectTracker:
-    def __init__(self, max_distance=400):
-        self.objects = {}          # id → (x, y)
-        self.next_id = 1
-        self.max_distance = max_distance
-
-    def update(self, detections):
-        updated = {}
-
-        for (x, y) in detections:
-            best_id = None
-            best_dist = 999999
-
-            for oid, (ox, oy) in self.objects.items():
-                dist = np.hypot(x - ox, y - oy)
-                if dist < best_dist and dist < self.max_distance:
-                    best_dist = dist
-                    best_id = oid
-
-            if best_id is None:
-                best_id = self.next_id
-                self.next_id += 1
-
-            updated[best_id] = (x, y)
-
-        self.objects = updated
-        return updated
-
-# ---------------------------------------------------------------------------
-# Visualisatie + tracking + logging
+# Visualisatie + logging (GEEN ID’s)
 # ---------------------------------------------------------------------------
 def view_lidar(port: str, min_distance: float) -> None:
     lidar = StandaloneLidar(port=port, min_distance=min_distance)
     lidar.start()
 
-    # Open logbestand
     logfile = open("lidar_object_log.txt", "a")
     logfile.write("\n--- Nieuwe sessie gestart ---\n")
 
@@ -205,8 +173,6 @@ def view_lidar(port: str, min_distance: float) -> None:
 
     angles = np.linspace(0, 2 * np.pi, 360) - np.pi/2
 
-    tracker = ObjectTracker()
-
     print("[PLOT] Viewer gestart.")
 
     try:
@@ -214,35 +180,31 @@ def view_lidar(port: str, min_distance: float) -> None:
             data = lidar.scan_data.copy()
             plot_data = np.where(np.isinf(data), 0, data)
 
+            # FIX: spiegeling opgelost
             x = -plot_data * np.cos(angles)
-            y = plot_data * np.sin(angles)
+            y =  plot_data * np.sin(angles)
 
             # Detecteer objecten
             detections = detect_objects(plot_data, angles)
 
-            # Update tracking
-            tracked = tracker.update(detections)
-
             ax.clear()
             ax.scatter(x, y, s=2, c="lime")
 
-            # Teken objecten + log ze
-            for oid, (ox, oy) in tracked.items():
-                print(f"[OBJECT {oid}] x={ox:.1f} mm, y={oy:.1f} mm")
+            # Teken objecten + log ze (zonder ID)
+            for (ox, oy) in detections:
+                print(f"[OBJECT] x={ox:.1f} mm, y={oy:.1f} mm")
 
-                # Log naar txt-bestand
                 timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-                logfile.write(f"{timestamp}, ID={oid}, x={ox:.1f}, y={oy:.1f}\n")
+                logfile.write(f"{timestamp}, x={ox:.1f}, y={oy:.1f}\n")
 
                 ax.plot(ox, oy, "ro", markersize=8)
-                ax.text(ox, oy, f"ID {oid}", color="white")
 
             ax.set_xlim(-PLOT_RANGE, PLOT_RANGE)
             ax.set_ylim(-1000, PLOT_RANGE)
             ax.set_facecolor("black")
             ax.set_aspect("equal")
             ax.grid(True, alpha=0.3, color="gray")
-            ax.set_title("LiDAR Scan + Objecttracking", color="white")
+            ax.set_title("LiDAR Scan (objectdetectie)", color="white")
             fig.patch.set_facecolor("black")
             ax.tick_params(colors="white")
 
@@ -267,7 +229,7 @@ def view_lidar(port: str, min_distance: float) -> None:
 def main() -> None:
     global PLOT_RANGE
 
-    parser = argparse.ArgumentParser(description="LiDAR viewer met objecttracking")
+    parser = argparse.ArgumentParser(description="LiDAR viewer zonder ID’s")
     parser.add_argument("--port", type=str, default=None)
     parser.add_argument("--min-distance", type=float, default=MIN_DISTANCE_MM)
     parser.add_argument("--range", type=float, default=PLOT_RANGE)
@@ -278,7 +240,7 @@ def main() -> None:
     port = args.port or find_lidar_port() or DEFAULT_PORT
 
     print("=" * 50)
-    print("  LiDAR Viewer + Objecttracking")
+    print("  LiDAR Viewer (zonder ID’s)")
     print(f"  Poort: {port}")
     print(f"  Min afstand: {args.min_distance} mm")
     print(f"  Plot bereik: ±{PLOT_RANGE} mm")
