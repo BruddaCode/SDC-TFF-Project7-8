@@ -191,7 +191,7 @@ def view_lidar(port: str, min_distance: float) -> None:
             ax.clear()
             ax.scatter(x, y, s=2, c="lime")
             ax.set_xlim(-PLOT_RANGE, PLOT_RANGE)
-            ax.set_ylim(-100, PLOT_RANGE)
+            ax.set_ylim(-1000, PLOT_RANGE)
             ax.set_facecolor("black")
             ax.set_aspect("equal")
             ax.grid(True, alpha=0.3, color="gray")
