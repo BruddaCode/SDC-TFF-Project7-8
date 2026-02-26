@@ -214,7 +214,7 @@ def view_lidar(port: str, min_distance: float) -> None:
             data = lidar.scan_data.copy()
             plot_data = np.where(np.isinf(data), 0, data)
 
-            x = plot_data * np.cos(angles)
+            x = -plot_data * np.cos(angles)
             y = plot_data * np.sin(angles)
 
             # Detecteer objecten
