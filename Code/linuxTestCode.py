@@ -156,7 +156,7 @@ def detect_objects(distances, angles, max_distance=3000, min_cluster_size=3):
     return centroids
 
 # ---------------------------------------------------------------------------
-# Visualisatie + logging (GEEN ID’s)
+# Visualisatie + logging (GEEN ID’s, GEEN RODE DOTS)
 # ---------------------------------------------------------------------------
 def view_lidar(port: str, min_distance: float) -> None:
     lidar = StandaloneLidar(port=port, min_distance=min_distance)
@@ -190,14 +190,12 @@ def view_lidar(port: str, min_distance: float) -> None:
             ax.clear()
             ax.scatter(x, y, s=2, c="lime")
 
-            # Teken objecten + log ze (zonder ID)
+            # Log objecten (maar NIET tekenen)
             for (ox, oy) in detections:
                 print(f"[OBJECT] x={ox:.1f} mm, y={oy:.1f} mm")
 
                 timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
                 logfile.write(f"{timestamp}, x={ox:.1f}, y={oy:.1f}\n")
-
-                ax.plot(ox, oy, "ro", markersize=8)
 
             ax.set_xlim(-PLOT_RANGE, PLOT_RANGE)
             ax.set_ylim(-1000, PLOT_RANGE)
