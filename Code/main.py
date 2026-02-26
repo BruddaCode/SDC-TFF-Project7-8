@@ -100,7 +100,7 @@ def getCameraId(cameraName):
     return cameraIDs
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     ids = getCameraId("logitech")
     names = ["left", "middle", "right"]
     
