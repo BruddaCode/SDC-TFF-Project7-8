@@ -1,16 +1,8 @@
 """
-Standalone LiDAR viewer voor Ubuntu/Linux.
+Standalone LiDAR viewer voor Ubuntu/Linux met objectdetectie, tracking en logging.
 
-Dit script bevat ALLES wat nodig is om de LiDAR uit te lezen en te visualiseren.
-Geen imports uit de rest van de codebase nodig.
-
-Vereisten (pip install):
+Vereisten:
     pip install rplidar-roboticia numpy matplotlib pyserial
-
-Gebruik:
-    python3 view_lidar_standalone_linux.py                     # auto-detectie
-    python3 view_lidar_standalone_linux.py --port /dev/ttyUSB0
-    python3 view_lidar_standalone_linux.py --min-distance 500
 """
 
 import argparse
@@ -24,30 +16,26 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # ---------------------------------------------------------------------------
-# Probeer rplidar te importeren; geef duidelijke foutmelding als het mist
+# Probeer rplidar te importeren
 # ---------------------------------------------------------------------------
 try:
     from rplidar import RPLidar
 except ImportError:
-    print(
-        "\n[FOUT] rplidar is niet geïnstalleerd.\n"
-        "Installeer het met:  pip install rplidar-roboticia\n"
-    )
+    print("\n[FOUT] rplidar ontbreekt. Installeer met: pip install rplidar-roboticia\n")
     sys.exit(1)
 
 # ---------------------------------------------------------------------------
-# Config – Linux defaults
+# Config
 # ---------------------------------------------------------------------------
-DEFAULT_PORT = "/dev/ttyUSB0"   # Ubuntu/Linux standaard
+DEFAULT_PORT = "/dev/ttyUSB0"
 MIN_DISTANCE_MM = 500
 PLOT_RANGE = 10_000
 BAUD_RATE = 115200
 
 # ---------------------------------------------------------------------------
-# Linux/Ubuntu serial auto-detectie
+# Auto-detectie van LiDAR poort
 # ---------------------------------------------------------------------------
 def find_lidar_port() -> str | None:
-    """Probeer automatisch de seriële poort van de LiDAR te vinden op Linux/Ubuntu."""
     try:
         import serial.tools.list_ports
         ports = serial.tools.list_ports.comports()
@@ -56,7 +44,6 @@ def find_lidar_port() -> str | None:
             desc = (port.description or "").lower()
             dev = port.device.lower()
 
-            # Linux device namen + bekende USB-serial chips
             if (
                 "ttyusb" in dev
                 or "ttyacm" in dev
@@ -64,44 +51,30 @@ def find_lidar_port() -> str | None:
                 or "ch340" in desc
                 or "ftdi" in desc
                 or "silicon labs" in desc
-                or "lidar" in desc
             ):
-                print(f"[AUTO-DETECT] LiDAR gevonden op {port.device} ({port.description})")
+                print(f"[AUTO-DETECT] LiDAR gevonden op {port.device}")
                 return port.device
 
-        if ports:
-            print("[AUTO-DETECT] Geen bekende LiDAR-chip gevonden. Beschikbare poorten:")
-            for p in ports:
-                print(f"  - {p.device}: {p.description}")
-            return None
+        return None
 
     except ImportError:
-        pass
-
-    return None
+        return None
 
 # ---------------------------------------------------------------------------
-# Lidar klasse – alles-in-één, geen externe dependencies uit het project
+# LiDAR uitleesklasse
 # ---------------------------------------------------------------------------
 class StandaloneLidar:
-    """Leest data van een RPLiDAR sensor in een achtergrond-thread."""
-
     def __init__(self, port: str, min_distance: float = MIN_DISTANCE_MM) -> None:
         self.min_distance = min_distance
         self.scan_data = np.full(360, np.inf)
         self._running = False
 
-        print(f"[LIDAR] Verbinden met poort {port} …")
+        print(f"[LIDAR] Verbinden met {port} …")
         try:
             self.lidar = RPLidar(port, timeout=3)
         except Exception as e:
-            print(f"[FOUT] Kan niet verbinden met LiDAR op {port}: {e}")
-            print("\nTips voor Linux:")
-            print("  1. Controleer of de LiDAR zichtbaar is met:")
-            print("       ls /dev/ttyUSB* /dev/ttyACM*")
-            print("  2. Voeg jezelf toe aan de 'dialout' groep:")
-            print("       sudo usermod -a -G dialout $USER")
-            print("  3. Log daarna opnieuw in.")
+            print(f"[FOUT] Kan niet verbinden: {e}")
+            print("Controleer rechten: sudo usermod -a -G dialout $USER")
             sys.exit(1)
 
         self.lidar.stop_motor()
@@ -111,7 +84,7 @@ class StandaloneLidar:
         self._running = True
         if not self._thread.is_alive():
             self._thread.start()
-        print("[LIDAR] Gestart – wacht op data …")
+        print("[LIDAR] Gestart.")
 
     def stop(self) -> None:
         self._running = False
@@ -123,29 +96,27 @@ class StandaloneLidar:
             pass
         print("[LIDAR] Gestopt.")
 
-    # ----- interne methodes -----
-
     def _capture(self) -> None:
         self.lidar.start_motor()
         for scan in self._iter_scans():
             if not self._running:
                 break
+
             for _, angle, distance in scan:
-                angle_idx = min(359, floor(angle))
-                if distance < self.min_distance:
-                    self.scan_data[angle_idx] = np.inf
-                else:
-                    self.scan_data[angle_idx] = distance
+                idx = min(359, floor(angle))
+                self.scan_data[idx] = distance if distance >= self.min_distance else np.inf
 
     def _iter_scans(self):
         scan_list = []
         for new_scan, quality, angle, distance in self.lidar.iter_measures():
             if not self._running:
                 break
+
             if new_scan:
                 if len(scan_list) > 5:
                     yield scan_list
                 scan_list = []
+
             scan_list.append((quality, angle, distance))
 
     def _listen(self) -> None:
@@ -153,21 +124,78 @@ class StandaloneLidar:
             try:
                 self._capture()
             except Exception as e:
-                logging.error("Fout bij het uitlezen van de LiDAR: %s", e)
-                try:
-                    self.lidar.stop()
-                    self.lidar.stop_motor()
-                except Exception:
-                    pass
-                if self._running:
-                    time.sleep(1)
+                logging.error("Leesfout: %s", e)
+                time.sleep(1)
 
 # ---------------------------------------------------------------------------
-# Visualisatie
+# Objectdetectie
+# ---------------------------------------------------------------------------
+def detect_objects(distances, angles, max_distance=3000, min_cluster_size=3):
+    objects = []
+    cluster = []
+
+    for i in range(len(distances)):
+        d = distances[i]
+
+        if not np.isinf(d) and d < max_distance:
+            cluster.append(i)
+        else:
+            if len(cluster) >= min_cluster_size:
+                objects.append(cluster)
+            cluster = []
+
+    if len(cluster) >= min_cluster_size:
+        objects.append(cluster)
+
+    centroids = []
+    for cluster in objects:
+        xs = [distances[i] * np.cos(angles[i]) for i in cluster]
+        ys = [distances[i] * np.sin(angles[i]) for i in cluster]
+        centroids.append((np.mean(xs), np.mean(ys)))
+
+    return centroids
+
+# ---------------------------------------------------------------------------
+# Objecttracking
+# ---------------------------------------------------------------------------
+class ObjectTracker:
+    def __init__(self, max_distance=400):
+        self.objects = {}          # id → (x, y)
+        self.next_id = 1
+        self.max_distance = max_distance
+
+    def update(self, detections):
+        updated = {}
+
+        for (x, y) in detections:
+            best_id = None
+            best_dist = 999999
+
+            for oid, (ox, oy) in self.objects.items():
+                dist = np.hypot(x - ox, y - oy)
+                if dist < best_dist and dist < self.max_distance:
+                    best_dist = dist
+                    best_id = oid
+
+            if best_id is None:
+                best_id = self.next_id
+                self.next_id += 1
+
+            updated[best_id] = (x, y)
+
+        self.objects = updated
+        return updated
+
+# ---------------------------------------------------------------------------
+# Visualisatie + tracking + logging
 # ---------------------------------------------------------------------------
 def view_lidar(port: str, min_distance: float) -> None:
     lidar = StandaloneLidar(port=port, min_distance=min_distance)
     lidar.start()
+
+    # Open logbestand
+    logfile = open("lidar_object_log.txt", "a")
+    logfile.write("\n--- Nieuwe sessie gestart ---\n")
 
     time.sleep(1)
 
@@ -175,10 +203,11 @@ def view_lidar(port: str, min_distance: float) -> None:
     fig, ax = plt.subplots(figsize=(8, 8))
     fig.canvas.manager.set_window_title("LiDAR Viewer")
 
-    # angles = np.linspace(0, 2 * np.pi, 360)
     angles = np.linspace(0, 2 * np.pi, 360) - np.pi/2
 
-    print("[PLOT] Live weergave gestart. Sluit het venster of druk Ctrl+C om te stoppen.")
+    tracker = ObjectTracker()
+
+    print("[PLOT] Viewer gestart.")
 
     try:
         while True:
@@ -188,18 +217,36 @@ def view_lidar(port: str, min_distance: float) -> None:
             x = plot_data * np.cos(angles)
             y = plot_data * np.sin(angles)
 
+            # Detecteer objecten
+            detections = detect_objects(plot_data, angles)
+
+            # Update tracking
+            tracked = tracker.update(detections)
+
             ax.clear()
             ax.scatter(x, y, s=2, c="lime")
+
+            # Teken objecten + log ze
+            for oid, (ox, oy) in tracked.items():
+                print(f"[OBJECT {oid}] x={ox:.1f} mm, y={oy:.1f} mm")
+
+                # Log naar txt-bestand
+                timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+                logfile.write(f"{timestamp}, ID={oid}, x={ox:.1f}, y={oy:.1f}\n")
+
+                ax.plot(ox, oy, "ro", markersize=8)
+                ax.text(ox, oy, f"ID {oid}", color="white")
+
             ax.set_xlim(-PLOT_RANGE, PLOT_RANGE)
             ax.set_ylim(-1000, PLOT_RANGE)
             ax.set_facecolor("black")
             ax.set_aspect("equal")
             ax.grid(True, alpha=0.3, color="gray")
-            ax.set_title("LiDAR Scan (afstand in mm)", color="white")
+            ax.set_title("LiDAR Scan + Objecttracking", color="white")
             fig.patch.set_facecolor("black")
             ax.tick_params(colors="white")
 
-            ax.plot(0, 0, "r+", markersize=15, markeredgewidth=2)
+            ax.plot(0, 0, "r+", markersize=15)
 
             plt.pause(0.05)
 
@@ -211,51 +258,30 @@ def view_lidar(port: str, min_distance: float) -> None:
     finally:
         lidar.stop()
         plt.close("all")
+        logfile.close()
+        print("[LOG] Data opgeslagen in lidar_object_log.txt")
 
 # ---------------------------------------------------------------------------
-# Argument parsing & main
+# Main
 # ---------------------------------------------------------------------------
 def main() -> None:
     global PLOT_RANGE
 
-    parser = argparse.ArgumentParser(
-        description="Standalone LiDAR viewer voor Ubuntu/Linux (RPLiDAR)"
-    )
-    parser.add_argument(
-        "--port",
-        type=str,
-        default=None,
-        help=f"Seriële poort van de LiDAR (bijv. /dev/ttyUSB0). Standaard: auto-detect of {DEFAULT_PORT}",
-    )
-    parser.add_argument(
-        "--min-distance",
-        type=float,
-        default=MIN_DISTANCE_MM,
-        help=f"Minimale afstand in mm. Standaard: {MIN_DISTANCE_MM}",
-    )
-    parser.add_argument(
-        "--range",
-        type=float,
-        default=PLOT_RANGE,
-        dest="plot_range",
-        help=f"Plot bereik in mm. Standaard: {PLOT_RANGE}",
-    )
+    parser = argparse.ArgumentParser(description="LiDAR viewer met objecttracking")
+    parser.add_argument("--port", type=str, default=None)
+    parser.add_argument("--min-distance", type=float, default=MIN_DISTANCE_MM)
+    parser.add_argument("--range", type=float, default=PLOT_RANGE)
+
     args = parser.parse_args()
+    PLOT_RANGE = args.range
 
-    PLOT_RANGE = args.plot_range
-
-    port = args.port
-    if port is None:
-        port = find_lidar_port()
-    if port is None:
-        print(f"[INFO] Geen LiDAR-poort gedetecteerd, gebruik standaard: {DEFAULT_PORT}")
-        port = DEFAULT_PORT
+    port = args.port or find_lidar_port() or DEFAULT_PORT
 
     print("=" * 50)
-    print("  LiDAR Standalone Viewer (Linux)")
-    print(f"  Poort:           {port}")
-    print(f"  Min afstand:     {args.min_distance} mm")
-    print(f"  Plot bereik:     ±{PLOT_RANGE} mm")
+    print("  LiDAR Viewer + Objecttracking")
+    print(f"  Poort: {port}")
+    print(f"  Min afstand: {args.min_distance} mm")
+    print(f"  Plot bereik: ±{PLOT_RANGE} mm")
     print("=" * 50)
 
     view_lidar(port=port, min_distance=args.min_distance)
