@@ -43,5 +43,18 @@ class GrayStereoCamera(StereoCamera):
             print("Failed to grab frame")
             return None
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+<<<<<<< Updated upstream
         cv2.imshow(f"{self.camPos} (Grayscale)", gray)
         self.writer.write(gray)
+=======
+
+        # Apply Gaussian Blur to reduce noise
+        blur = cv2.GaussianBlur(gray, (5, 5), 1.4)
+    
+        # Apply Canny Edge Detector
+        edges = cv2.Canny(blur, threshold1=10, threshold2=150)
+
+        cv2.imshow(f"{self.camPos} (Grayscale)", edges)
+
+        self.writer.write(edges)
+>>>>>>> Stashed changes
