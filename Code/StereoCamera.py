@@ -25,7 +25,6 @@ class StereoCamera:
         
     def get_frame(self):
         ret, frame = self.cam.read()
-        self.cam.open(0)  # Reopen the camera to reset it
         if not ret:
             print("Failed to grab frame")
             return None
@@ -40,7 +39,6 @@ class GrayStereoCamera(StereoCamera):
         
     def get_frame(self):
         ret, frame = self.cam.read()
-        self.cam.open(self.index)  # Reopen the camera to reset it
         if not ret:
             print("Failed to grab frame")
             return None
