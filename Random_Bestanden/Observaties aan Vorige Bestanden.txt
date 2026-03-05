@@ -1,0 +1,17 @@
+Observaties aan Vorige Bestanden
+ Camera Frame Rate Research
+  - In de conclusie staat "Not all three camera's require the same frame rate". Ze gebruiken in hun code allemaal dezelfde frame rate
+  - rear camera?
+
+ Experimental Steering and Roadmarkings
+  - Het experiment gedeelte lijkt niet compleet te zijn, sinds het eindigt met problemen.
+
+ LiDaR Research
+  - Uit de resultaten en in de Conclusie staat dat 3m de laagste deviation time en reactie tijd had... In de code staat 4 meter... dit staat niet in de research
+  - De eerste onderzoeksvraag in 2.3 is niet heel nutvol, de rol van de NUC is dat het het brein is van de Kart
+
+ Intel NUC & State Machine
+  - Ik zie niet hoe dit onderzoek nutvol is, je krijgt de NUC van het SDC. Waarom
+
+ ObjectDetectionModel Research
+  - In 3 staan YOLO en SSD, vervolgens wordt SSD genegeerd en in 4.2 worden RCNN en RTFETR geintroduceerd (wat is dat)
