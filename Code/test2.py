@@ -18,7 +18,7 @@ def getCameraId(cameraName):
 
 class StereoCamera:
     def __init__(self, index, camPos):
-        self.cam = cv2.VideoCapture(index, cv2.CAP_MSMF)
+        self.cam = cv2.VideoCapture(index, cv2.CAP_V4L2)
 
         self.config = yaml.safe_load(open("conf.yaml"))
         self.config = self.config[f"test{sys.argv[1]}"].split(", ")
@@ -35,6 +35,8 @@ class StereoCamera:
         self.cam.set(cv2.CAP_PROP_FPS, int(self.config[2]))
         self.cam.set(cv2.CAP_PROP_AUTOFOCUS, 0)
         self.camPos = camPos
+        
+        print(self.cam.get(cv2.CAP_PROP_FRAME_WIDTH), self.cam.get(cv2.CAP_PROP_FRAME_HEIGHT), self.cam.get(cv2.CAP_PROP_FPS))
         
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         self.writer = cv2.VideoWriter(
@@ -69,5 +71,9 @@ if __name__ == "__main__":
         # camR.get_frame()
         
         if cv2.waitKey(1) & 0xFF == ord('q'):
+            camL.cam.release()
+            # camM.cam.release()
+            # camR.cam.release()
+            cv2.destroyAllWindows()
             break
 
