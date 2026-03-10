@@ -18,7 +18,7 @@ def getCameraId(cameraName):
 if __name__ == "__main__":
     ids = getCameraId("logitech")
     names = ["left", "middle", "right"]
-    camL = StereoCamera(ids[0], names[0])
+    camL = GrayStereoCamera(ids[0], names[0])
     # camM = StereoCamera(ids[1], names[1])
     # camR = GrayStereoCamera(ids[2], names[2])
     

@@ -38,23 +38,33 @@ class GrayStereoCamera(StereoCamera):
         self.index = index
         
     def get_frame(self):
-        ret, frame = self.cam.read()
+        ret, self.frame = self.cam.read()
         if not ret:
             print("Failed to grab frame")
             return None
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-<<<<<<< Updated upstream
-        cv2.imshow(f"{self.camPos} (Grayscale)", gray)
-        self.writer.write(gray)
-=======
-
+        gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+        # self.writer.write(self.frame)
         # Apply Gaussian Blur to reduce noise
         blur = cv2.GaussianBlur(gray, (5, 5), 1.4)
     
         # Apply Canny Edge Detector
         edges = cv2.Canny(blur, threshold1=10, threshold2=150)
 
-        cv2.imshow(f"{self.camPos} (Grayscale)", edges)
+        self.getHoughLines(edges)
 
-        self.writer.write(edges)
->>>>>>> Stashed changes
+        cv2.imshow(f"{self.camPos} (Grayscale)", self.frame)
+
+    def getHoughLines(self, edges):
+        lines = cv2.HoughLines(edges, 1, np.pi/180, 200)
+        for line in lines:
+            rho,theta = line[0]
+            a = np.cos(theta)
+            b = np.sin(theta)
+            x0 = a*rho
+            y0 = b*rho
+            x1 = int(x0 + 1000*(-b))
+            y1 = int(y0 + 1000*(a))
+            x2 = int(x0 - 1000*(-b))
+            y2 = int(y0 - 1000*(a))
+
+            cv2.line(self.frame,(x1,y1),(x2,y2),(0,0,255),2)

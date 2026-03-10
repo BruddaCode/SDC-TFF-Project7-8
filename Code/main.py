@@ -1,116 +1,96 @@
-from cv2_enumerate_cameras import enumerate_cameras
 import cv2
+import numpy as np
 
-# class cameraReader:
-#     def __init__(self, cap, out, frame):
-#         self.cap = cap 
-#         self.frame = frame    
-#         fourcc = cv.VideoWriter_fourcc(*'XVID')
-#         self.out = cv.VideoWriter(out, fourcc, 20.0, (640,  480))
+video = cv2.VideoCapture("code/right.mp4")
+video.open("right.mp4")
 
-#     def Stream(self):
-#         ret, cap_frame = self.cap.read()
+def region_of_interest(img, vertices):
+    mask = np.zeros_like(img)
+    cv2.fillPoly(mask, vertices, 255)
+    masked_image = cv2.bitwise_and(img, mask)
+    return masked_image
 
-#         if not ret:
-#             print("Can't receive frame (stream end?). Exiting ...")
-#             exit()
+def get_y(line, x_norm):
+    x1, y1, x2, y2 = line
+    if x1 == x2:  # vertical line
+        return y1
+    if (x1 - x_norm) * (x2 - x_norm) > 0:  # line does not cross x_norm
+        return None
 
-#         cv.imshow(self.frame, cap_frame)
+    m = (y2 - y1) / (x2 - x1)
+    y = y1 + (x_norm - x1) * m
+    return int(y)
 
-#         self.out.write(cap_frame)
+while True:
+	ret, frame = video.read()
+	if not ret:
+		break
 
-#         if cv.waitKey(1) == ord('q'):
-#             exit()
+	# linedetection.process_frame(frame, "RIGHT")
+	# gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+	# # Apply Gaussian Blur to reduce noise
+	# blur = cv2.GaussianBlur(gray, (5, 5), 1.4)
 
-# class main:
-#     cap = []
+	# # Apply Canny Edge Detector
+	# edges = cv2.Canny(blur, threshold1=10, threshold2=150)
+	# lines = cv2.HoughLinesP(edges,1,np.pi/180,100,minLineLength=50,maxLineGap=300)
 
-#     for camera_info in ec():
-#         print(camera_info)
-#         if "logitech" in camera_info.name.lower():
-#             cap.append(cv.VideoCapture(int(str(camera_info.index)[-1]), camera_info.backend))
+	# try:
+	# 	if not lines.size == 0:
+	# 		for line in lines:
+	# 			x1,y1,x2,y2 = line[0]
+	# 			cv2.line(frame,(x1,y1),(x2,y2),(0.255,0),2)
+	# except:
+	# 	print("kut zooi")
+		
 
-#     fourcc = cv.VideoWriter_fourcc(*'XVID')
-#     out = cv.VideoWriter('output.avi', fourcc, 20.0, (640,  480))
-#     for c in cap:
-#         if not c.isOpened():
-#             print("Cannot open camera")
+	
 
-#     cameras = []
-#     output = ['output1.avi', 'output2.avi', 'output3.avi']
-#     frames = ['Right', 'Left', 'Middle']
-
-#     for c in cap:
-#         cameras.append(cameraReader(c, output[cap.index(c)], frames[cap.index(c)]))
-
-#     while True:
-#         for c in cameras:
-#             c.Stream()
-
-#         if cv.waitKey(1) == ord('q'):
-#             break
-
-#     for c in cap:
-#         c.release()
-#     out.release()
-#     cv.destroyAllWindows()
-
-class StereoCamera:
-    def __init__(self, index, camPos):
-        self.cam = cv2.VideoCapture(index, cv2.CAP_V4L2)
-        if not self.cam.isOpened():
-            print(f"Camera {index} failed to open")
-            return None
-        self.cam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        self.cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'mp4v'))
-        self.cam.set(cv2.CAP_PROP_FPS, 30)
-        self.cam.set(cv2.CAP_PROP_AUTOFOCUS, 0)
-        self.camPos = camPos
-        
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        self.writer = cv2.VideoWriter(
-            f"{self.camPos}.mp4",
-            fourcc,
-            30,
-            (640, 480)
-        )
-        print(f"Stereo Camera {index} initialized.")
-        
-    def get_frame(self):
-        ret, frame = self.cam.read()
-        if not ret:
-            print("Failed to grab frame")
-            return None
-        cv2.imshow(f"{self.camPos}", frame)
-        self.writer.write(frame)
-        # return frame
-
-def getCameraId(cameraName):
-    cameraIDs = []
-    
-    for camera_info in enumerate_cameras():
-        if cameraName.lower() in camera_info.name.lower():
-            if int(str(camera_info.index)[-1]) not in cameraIDs:
-                cameraIDs.append(int(str(camera_info.index)[-1]))
-        else:
-            print(f"Camera '{camera_info.name}' does not match the specified name '{cameraName}'.")
-        
-    return cameraIDs
+	# cv2.imshow("Houghlines", frame)
 
 
-if __name__ == "__main__":
-    ids = getCameraId("logitech")
-    names = ["left", "middle", "right"]
-    camL = StereoCamera(ids[0], names[0])
-    camM = StereoCamera(ids[1], names[1])
-    camR = StereoCamera(ids[2], names[2])
-    
-    while True:
-        camL.get_frame()
-        camM.get_frame()
-        camR.get_frame()
-        
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+
+	# apply gaussian blur for less noise on the frame
+	filteredFrame = cv2.GaussianBlur(frame, (5, 5), 0)
+
+	# Turn the frame gray
+	filteredFrame = cv2.cvtColor(filteredFrame, cv2.COLOR_BGR2GRAY)
+
+	# filter between dark and light and make dark black and light white
+	_, filteredFrame = cv2.threshold(filteredFrame, 200, 255, cv2.THRESH_BINARY)
+
+	# apply canny edge detection to see adges of objects
+	filteredFrame = cv2.Canny(filteredFrame, threshold1=70, threshold2=200)
+
+	height, width = filteredFrame.shape
+	y_norm = int(height * 0.2)
+
+
+	x_norm = int(540/848 * width)
+
+	roi_border_x = int(width / 8 * 3)
+	region_vertices = [(roi_border_x, 0), (width, 0), (width, height), (roi_border_x, height)] # rechterkant
+
+	roi = region_of_interest(filteredFrame, np.array([region_vertices], np.int32))
+
+	# apply houghlines to visualize lines between points
+	lines = cv2.HoughLinesP(roi, 1, np.pi / 180, 50, np.array([]), minLineLength=50, maxLineGap=300)
+	y_at_target_values = []
+
+	if lines is not None:
+		for line in lines:
+			x1, y1, x2, y2 = line[0]
+
+			y_val = get_y([x1,y1,x2,y2], x_norm)
+			if y_val is not None:
+				y_at_target_values.append(y_val)
+
+				x1,y1,x2,y2 = line[0]
+				cv2.line(frame, (x1,y1),(x2,y2),(0,0,255),3)                
+
+	cv2.imshow("white", filteredFrame)
+	cv2.imshow("original", frame[0:319, 210:640])
+
+	if cv2.waitKey(1) & 0xFF == ord('q'):
+		break
