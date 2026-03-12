@@ -75,7 +75,7 @@ def run():
     fig = plt.figure(figsize=(12, 12))  # larger figure size
     fig.canvas.mpl_connect('key_press_event', close_figure)
     ax = plt.subplot(111, projection='polar')  # Back to polar projection
-    ax.set_theta_zero_location('N')     #sets the 0 degree angle to the top of the plot
+    ax.set_theta_zero_location('S')     #sets the 0 degree angle to the top of the plot
     ax.set_theta_direction(-1)
     ax.set_facecolor("gray")     #sets the background color of the plot to gray
     line = ax.scatter([0, 0], [0, 0], s=5, c='lime', lw=0)       #initializes the scatter plot with green dots
