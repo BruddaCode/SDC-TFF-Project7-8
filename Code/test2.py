@@ -18,12 +18,12 @@ def getCameraId(cameraName):
     return cameraIDs
 
 class StereoCamera:
-    def __init__(self, index, camPos):
+    def __init__(self, index, camPos, time):
         self.cam = cv2.VideoCapture(index, cv2.CAP_V4L2)
 
         self.config = yaml.safe_load(open("conf.yaml"))
         self.config = self.config[f"test{sys.argv[1]}"].split(", ")
-        self.time = datetime.datetime.now()
+        self.time = time
         self.path = os.path.join(os.getcwd(), f"{self.time}-{self.config[3]}-{self.config[1]}")
         # make sure the directory exists
         if not os.path.exists(self.path):
@@ -63,9 +63,10 @@ class StereoCamera:
 if __name__ == "__main__":
     ids = getCameraId("logitech")
     names = ["left", "middle", "right"]
-    camL = StereoCamera(ids[0], names[0])
-    camM = StereoCamera(ids[1], names[1])
-    camR = StereoCamera(ids[2], names[2])
+    time = datetime.datetime.now()
+    camL = StereoCamera(ids[0], names[0], time)
+    camM = StereoCamera(ids[1], names[1], time)
+    camR = StereoCamera(ids[2], names[2], time)
     
     while True:
         camL.get_frame()
