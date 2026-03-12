@@ -1,0 +1,9 @@
+# for the test track
+test1: 1920, 1080, 30, test1
+test3: 1280, 720, 30, test3
+test5: 640, 480, 30, test5
+
+# for the research papers
+test2: 1920, 1080, 60, test2
+test4: 1280, 720, 60, test4
+test6: 640, 480, 60, test6
