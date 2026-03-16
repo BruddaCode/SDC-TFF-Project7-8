@@ -39,8 +39,7 @@ class CanListener:
         self.running = False
     
     def get_new_values(self):
-        values = self.data
-        return values
+        return self.data.copy()
 
     def _listen(self):
         while self.running:
@@ -80,35 +79,64 @@ class CanWorker:
 
     def __init__(self, can_queue: Queue, folder: str):
         self.queue = can_queue
-        self.thread = threading.Thread(target = self._process, args = (), daemon = True)
+        self.thread = threading.Thread(target=self._process, args=(), daemon=True)
         self.folder_name = folder
         self.file_pointer = open(os.path.join(self.folder_name, f'recording.csv'), 'w')
-        print('Timestamp|Steering|SteeringSpeed|Throttle|Brake|SteeringSensor', file = self.file_pointer)
-    
+
+        # For braking intensity
+        self.prev_brake = None
+        self.prev_time = None
+
+        print('Timestamp|Steering|SteeringSpeed|Throttle|Brake|BrakeIntensity|SteeringSensor',
+              file=self.file_pointer)
+
     def start(self):
         self.thread.start()
-    
+
     def stop(self):
         self.queue.join()
         self.file_pointer.close()
-    
+
     def put(self, data):
         self.queue.put(data)
-    
+
     def _process(self):
         while True:
             timestamp, values = self.queue.get()
+
+            # Decode brake %
+            brake = values["brake"][0] / 100 if values["brake"] else None
+
+            # Compute brake intensity
+            if brake is not None and self.prev_brake is not None:
+                dt = timestamp - self.prev_time if self.prev_time else 0.1
+                brake_intensity = (brake - self.prev_brake) / dt
+            else:
+                brake_intensity = ""
+
+            self.prev_brake = brake
+            self.prev_time = timestamp
+
+            # Decode steering
             steering = str(struct.unpack("f", bytearray(values["steering"][:4]))[0]) if values["steering"] else ""
             steering_speed = str(struct.unpack(">I", bytearray(values["steering"][4:]))[0]) if values["steering"] else ""
-            throttle = str(values["throttle"][0]/100) if values["throttle"] else ""
-            brake = str(values["brake"][0]/100) if values["brake"] else ""
+
+            # Decode throttle
+            throttle = str(values["throttle"][0] / 100) if values["throttle"] else ""
+
+            # Decode steering sensor
             if values["steering_sensor"]:
                 steering_sensor = (values["steering_sensor"][1] << 8 | values["steering_sensor"][2])
-                steering_sensor -= 65536 if steering_sensor > 32767 else 0
+                if steering_sensor > 32767:
+                    steering_sensor -= 65536
             else:
                 steering_sensor = ""
-            print(f'{timestamp}|{steering}|{steering_speed}|{throttle}|{brake}|{steering_sensor}', file=self.file_pointer)
+
+            print(f'{timestamp}|{steering}|{steering_speed}|{throttle}|{brake}|{brake_intensity}|{steering_sensor}',
+                  file=self.file_pointer)
+
             self.queue.task_done()
+
 
 
 def main():
@@ -133,24 +161,15 @@ def main():
     can_worker = CanWorker(Queue(), recording_folder)
     can_worker.start()
 
-    # print('Recording...', file=sys.stderr)
-    # frames: Dict[str, cv2.Mat] = dict()
-    # try:
-    #     while True:
-    #         ok_count = 0
-    #         values = can_listener.get_new_values()
-    #         timestamp = time.time()
-    #         for side, camera in cameras.items():
-    #             ok, frames[side] = camera.retrieve()
-    #             ok_count += ok
-    #         if ok_count == len(cameras):
-    #             for side, frame in frames.items():
-    #                 image_worker.put((timestamp, side, frame))
-    #             can_worker.put((timestamp, values))
-    #         for camera in cameras.values():
-    #             camera.grab()
-    # except KeyboardInterrupt:
-    #     pass
+    print('Recording...', file=sys.stderr)
+    try:
+        while True:
+            values = can_listener.get_new_values()
+            timestamp = time.time()
+            can_worker.put((timestamp, values))
+            time.sleep(0.1)  # Adjust interval as needed
+    except KeyboardInterrupt:
+        pass
     
     print('Stopping...', file=sys.stderr)
     can_listener.stop_listening()

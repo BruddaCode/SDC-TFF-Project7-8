@@ -1,4 +1,5 @@
 from cv2_enumerate_cameras import enumerate_cameras
+import datetime
 import yaml
 import sys
 import cv2
@@ -17,15 +18,16 @@ def getCameraId(cameraName):
     return cameraIDs
 
 class StereoCamera:
-    def __init__(self, index, camPos):
+    def __init__(self, index, camPos, time):
         self.cam = cv2.VideoCapture(index, cv2.CAP_V4L2)
 
         self.config = yaml.safe_load(open("conf.yaml"))
         self.config = self.config[f"test{sys.argv[1]}"].split(", ")
-
+        self.time = time
+        self.path = os.path.join(os.getcwd(), f"{self.time}-{self.config[3]}-{self.config[1]}")
         # make sure the directory exists
-        if not os.path.exists(os.path.join(os.getcwd(), f"{self.config[3]}-{self.config[1]}")):
-            os.makedirs(os.path.join(os.getcwd(), f"{self.config[3]}-{self.config[1]}"))
+        if not os.path.exists(self.path):
+            os.makedirs(self.path)
 
         if not self.cam.isOpened():
             raise RuntimeError(f"Camera {index} failed to open")
@@ -40,7 +42,7 @@ class StereoCamera:
         
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         self.writer = cv2.VideoWriter(
-            os.path.join(os.getcwd(), f"{self.config[3]}-{self.config[1]}", f"{self.camPos}.mp4"),
+            os.path.join(self.path, f"{camPos}.mp4"),
             fourcc,
             (int(self.config[2])),
             (int(self.config[0]), int(self.config[1]))
@@ -61,19 +63,20 @@ class StereoCamera:
 if __name__ == "__main__":
     ids = getCameraId("logitech")
     names = ["left", "middle", "right"]
-    camL = StereoCamera(ids[0], names[0])
-    # camM = StereoCamera(ids[1], names[1])
-    # camR = StereoCamera(ids[2], names[2])
+    time = datetime.datetime.now()
+    camL = StereoCamera(ids[0], names[0], time)
+    camM = StereoCamera(ids[1], names[1], time)
+    camR = StereoCamera(ids[2], names[2], time)
     
     while True:
         camL.get_frame()
-        # camM.get_frame()
-        # camR.get_frame()
+        camM.get_frame()
+        camR.get_frame()
         
         if cv2.waitKey(1) & 0xFF == ord('q'):
             camL.cam.release()
-            # camM.cam.release()
-            # camR.cam.release()
+            camM.cam.release()
+            camR.cam.release()
             cv2.destroyAllWindows()
             break
 
