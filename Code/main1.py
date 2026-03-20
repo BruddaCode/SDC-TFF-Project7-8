@@ -1,6 +1,7 @@
 from cv2_enumerate_cameras import enumerate_cameras
 import cv2
-from StereoCamera import GrayStereoCamera, StereoCamera
+from StereoCamera import LineStereoCamera, StereoCamera
+import threading
 
 def getCameraId(cameraName):
     cameraIDs = []
@@ -18,14 +19,31 @@ def getCameraId(cameraName):
 if __name__ == "__main__":
     ids = getCameraId("logitech")
     names = ["left", "middle", "right"]
-    camL = StereoCamera(ids[0], names[0])
-    camM = StereoCamera(ids[1], names[1])
-    camR = StereoCamera(ids[2], names[2])
+    # camL = LineStereoCamera(ids[0], names[0])
+    # camM = StereoCamera(ids[1], names[1])
+    # camR = StereoCamera(ids[2], names[2])
+    cam = LineStereoCamera(0, "Bert")
+    video = cv2.VideoCapture("Test-Videos-12-03/test3-720/left.mp4")
+    video2 = cv2.VideoCapture("Test-Videos-12-03/test3-720/right.mp4")
     
-    while True:
-        camL.get_frame()
-        camM.get_frame()
-        camR.get_frame()
+
+    def processFrame(video, name):
+        while True:
+            ret, frame = video.read()
+            if not ret:
+                break
+            frame = frame[0:449, 0:639]
+            coolshit = cam.processFrame(frame)
+            cv2.imshow(name, coolshit)
+            if cv2.waitKey(30) & 0xFF == ord('q'):
+                break
         
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+    thread = threading.Thread(target=processFrame, args=(video, "Bert"))
+    thread2 = threading.Thread(target=processFrame, args=(video2, "Ernie"))
+    thread.start()
+    thread2.start()
+    thread.join()
+    thread2.join()
+    video.release()
+    video2.release()
+    cv2.destroyAllWindows()

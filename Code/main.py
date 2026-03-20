@@ -61,7 +61,7 @@ while True:
 	dstR = cv2.filter2D(filteredFrameR, -1, kernel)
 
 	# apply canny edge detection to see edges of objects
-	filteredFrameL = cv2.Canny(filteredFrameL, threshold1=100, threshold2=150)
+	filteredFrameL = cv2.Canny(dstL, threshold1=100, threshold2=150)
 	filteredFrameR = cv2.Canny(filteredFrameR, threshold1=100, threshold2=150)
 
 	kernel = np.ones((2,2), np.uint8)
