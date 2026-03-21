@@ -1,6 +1,7 @@
 from cv2_enumerate_cameras import enumerate_cameras
 import cv2
-from StereoCamera import LineStereoCamera, StereoCamera
+from line_detection.StereoCamera import StereoCamera
+from line_detection.LineDetector import LineDetector
 import threading
 
 def getCameraId(cameraName):
@@ -19,10 +20,11 @@ def getCameraId(cameraName):
 if __name__ == "__main__":
     ids = getCameraId("logitech")
     names = ["left", "middle", "right"]
-    # camL = LineStereoCamera(ids[0], names[0])
+    # camL = StereoCamera(ids[0], names[0])
     # camM = StereoCamera(ids[1], names[1])
     # camR = StereoCamera(ids[2], names[2])
-    cam = LineStereoCamera(0, "Bert")
+    detector = LineDetector()
+    cam = StereoCamera(0, "Bert")
     video = cv2.VideoCapture("Test-Videos-12-03/test3-720/left.mp4")
     video2 = cv2.VideoCapture("Test-Videos-12-03/test3-720/right.mp4")
     
@@ -33,7 +35,7 @@ if __name__ == "__main__":
             if not ret:
                 break
             frame = frame[0:449, 0:639]
-            coolshit = cam.processFrame(frame)
+            coolshit = detector.processFrame(frame)
             cv2.imshow(name, coolshit)
             if cv2.waitKey(30) & 0xFF == ord('q'):
                 break
