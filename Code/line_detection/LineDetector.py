@@ -7,22 +7,6 @@ class LineDetector():
 
     def cross(self, a, b):
         return a[0]*b[1] - a[1]*b[0]
-
-    def intersect (self, A, B, C, D):
-        r = (B[0]-A[0], B[1]-A[1])
-        s = (D[0]-C[0], D[1],C[1])
-        CA = (C[0]-A[0], C[1]-A[1])
-
-        denom = self.cross(r, s)
-        if denom == 0:
-            return None
-        
-        t = self.cross(CA, s) / denom
-        u = self.cross(CA, r) / denom
-
-        if 0 <= t <= 1 and 0  <= u <= 1:
-            return (int(A[0] + t*r[0]), int(A[1] + t*r[1]))
-        return None
     
     def intersect(self, A, B, x, y):
         if A[0] == B[0]:
@@ -51,14 +35,15 @@ class LineDetector():
         intersections = []
         lines = cv2.HoughLinesP(self.processFrame(frame), 1, np.pi/180, 120, minLineLength=80, maxLineGap=50)
         height, width, _ = frame.shape
-        for line in lines:  
-            x1,y1,x2,y2 = line[0]  
-            intersection = self.intersect((x1,y1), (x2,y2), int(width/2), height)
-            if intersection is not None:                
-                intersections.append(intersection)
-        
-        if intersections is not None and len(intersections) >= 2:
-            return max(intersections)
-        elif len(intersections) != 0:
-            return intersections[0]
-        return None
+        if lines is not None:
+            for line in lines:  
+                x1,y1,x2,y2 = line[0]  
+                intersection = self.intersect((x1,y1), (x2,y2), int(width/2), height)
+                if intersection is not None:    
+                    intersections.append(intersection)
+            
+            if intersections is not None and len(intersections) >= 2:
+                return max(intersections)
+            elif len(intersections) != 0:
+                return intersections[0]
+            return None

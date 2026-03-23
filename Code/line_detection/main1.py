@@ -1,7 +1,7 @@
 from cv2_enumerate_cameras import enumerate_cameras
 import cv2
-from line_detection.StereoCamera import StereoCamera
-from line_detection.LineDetector import LineDetector
+from StereoCamera import StereoCamera
+from LineDetector import LineDetector
 import threading
 
 def getCameraId(cameraName):
@@ -24,9 +24,9 @@ if __name__ == "__main__":
     # camM = StereoCamera(ids[1], names[1])
     # camR = StereoCamera(ids[2], names[2])
     detector = LineDetector()
-    cam = StereoCamera(0, "Bert")
-    video = cv2.VideoCapture("Test-Videos-12-03/test3-720/left.mp4")
-    video2 = cv2.VideoCapture("Test-Videos-12-03/test3-720/right.mp4")
+    # cam = StereoCamera(0, "Bert")
+    video = cv2.VideoCapture("../Test-Videos-12-03/test3-720/left.mp4") 
+    video2 = cv2.VideoCapture("../Test-Videos-12-03/test3-720/right.mp4")
     
 
     def processFrame(video, name):
@@ -35,17 +35,17 @@ if __name__ == "__main__":
             if not ret:
                 break
             frame = frame[0:449, 0:639]
-            coolshit = detector.getIntersection(frame)
-            cv2.imshow(name, coolshit)
+            print(detector.getIntersection(frame))
+            # cv2.imshow(name, coolshit)
             if cv2.waitKey(30) & 0xFF == ord('q'):
                 break
-        
-    thread = threading.Thread(target=processFrame, args=(video, "Bert"))
-    thread2 = threading.Thread(target=processFrame, args=(video2, "Ernie"))
-    thread.start()
-    thread2.start()
-    thread.join()
-    thread2.join()
-    video.release()
-    video2.release()
-    cv2.destroyAllWindows()
+    
+    processFrame(video, "jeff")
+    # thread = threading.Thread(target=processFrame, args=(video, "Bert"))
+    # thread2 = threading.Thread(target=processFrame, args=(video2, "Ernie"))
+    # thread.start()
+    # thread2.start()
+    # thread.join()
+    # thread2.join()
+    # video.release()
+    # video2.release()
