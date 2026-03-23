@@ -23,6 +23,15 @@ class LineDetector():
         if 0 <= t <= 1 and 0  <= u <= 1:
             return (int(A[0] + t*r[0]), int(A[1] + t*r[1]))
         return None
+    
+    def intersect(self, A, B, x, y):
+        if A[0] == B[0]:
+            return None
+        a = (B[1]-A[1])/(B[0]-A[0])
+        b = A[1] - a*A[0]
+        if 0 <= a*x + b <= y:
+            return (x, int(a*x + b))
+        return None
 
     def processFrame(self, frame):
         # apply gaussian blur for less noise on the frame
@@ -38,17 +47,13 @@ class LineDetector():
         dst = cv2.filter2D(filteredFrame, -1, kernel)
         return dst
     
-    def detectLines(self, frame):
-        proccessedFrame = self.processFrame(frame)
-        return cv2.HoughLinesP(proccessedFrame, 1, np.pi/180, 120, minLineLength=80, maxLineGap=50)
-    
     def getIntersection(self, frame):
         intersections = []
-        lines = self.detectLines(frame)
-        for line in lines:
-            height, width, _ = frame.shape
+        lines = cv2.HoughLinesP(self.processFrame(frame), 1, np.pi/180, 120, minLineLength=80, maxLineGap=50)
+        height, width, _ = frame.shape
+        for line in lines:  
             x1,y1,x2,y2 = line[0]  
-            intersection = self.intersect((x1,y1), (x2,y2), (int(width/2),0), (int(width/2),height))
+            intersection = self.intersect((x1,y1), (x2,y2), int(width/2), height)
             if intersection is not None:                
                 intersections.append(intersection)
         

@@ -35,7 +35,7 @@ if __name__ == "__main__":
             if not ret:
                 break
             frame = frame[0:449, 0:639]
-            coolshit = detector.processFrame(frame)
+            coolshit = detector.getIntersection(frame)
             cv2.imshow(name, coolshit)
             if cv2.waitKey(30) & 0xFF == ord('q'):
                 break
