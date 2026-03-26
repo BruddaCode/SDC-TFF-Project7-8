@@ -3,8 +3,6 @@ import cv2
 from StereoCamera import StereoCamera
 from LineDetector import LineDetector
 from LineThread import LineThread
-import queue
-import time
 
 def getCameraId(cameraName):
     cameraIDs = []
@@ -28,30 +26,11 @@ if __name__ == "__main__":
     detector = LineDetector()
     video = cv2.VideoCapture("../Test-Videos-12-03/test3-720/left.mp4") 
     video2 = cv2.VideoCapture("../Test-Videos-12-03/test3-720/right.mp4")
-    roi1 = (0,449)
-    roi2 = (0,639)
-    roi3 = (640, 1279)
-    outputQueue1 = queue.Queue(maxsize=5)
-    outputQueue2 = queue.Queue(maxsize=5)
-
+    roi = [(0,449), (0,639), (640,1279)]
     
 
-    def processFrame(video, name):
-        while True:
-            ret, frame = video.read()
-            if not ret:
-                break
-            frame = frame[0:449, 0:639]
-            intersection, frame = detector.getIntersection(frame)
-            if intersection is not None and intersection[1] > 0.6 * 449:
-                print("STUREN!!!!!")
-            cv2.imshow(name, frame)
-            if cv2.waitKey(30) & 0xFF == ord('q'):
-                break
-    
-    # processFrame(video, "jeff")
-    thread = LineThread(video, detector, roi1, roi2, outputQueue1)
-    thread2 = LineThread(video2, detector, roi1, roi3, outputQueue2)
+    thread = LineThread(video, detector, roi[0], roi[1])
+    thread2 = LineThread(video2, detector, roi[0], roi[2])
     thread.start()
     thread2.start()
     while True:
@@ -62,7 +41,7 @@ if __name__ == "__main__":
         if frame is not None:
             cv2.imshow("Ernie", frame)
         if cv2.waitKey(30) & 0xFF == ord('q'):
+            thread.stop()
+            thread2.stop()
             break
-    # thread.join()
-    # thread2.join()
     cv2.destroyAllWindows()
