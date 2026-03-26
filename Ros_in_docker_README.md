@@ -111,10 +111,7 @@ docker rm ros2_container
 ## 2. Running the container
 To run the container with a workspace mounted type the following it the terminal:
 ```bash
-docker run -it \
-    -v ~/ros2_ws:/ros2_ws \
-    --name ros2_container \
-    my_ros2_app
+docker run -it -v ~/ros2_ws:/ros2_ws --name ros2_container my_ros2_app
 ```
 ***IMPORTANT*** Leave this terminal running, DO NOT CLOSE
 
@@ -274,3 +271,27 @@ Now you are running multiple nodes inside the same container
     ```bash
     docker stop ros2_container
     ```
+
+
+# RViZ en Gazebo
+might need to install gazebo and rviz loacly
+```bash
+docker run -it \
+  --name ros2_container \
+  -v ~/ros2_ws:/ros2_ws \
+  -e DISPLAY=$DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  --device /dev/dri \
+  my_ros2_app
+```
+
+```bash 
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+```
+
+```bash
+rviz2
+gz sim
+```
+
