@@ -1,6 +1,6 @@
 import threading
-import cv2
 import time
+from rijden.carcontroller import CarController
 
 class LineThread(threading.Thread):
     def __init__(self, cam, detector, roi1, roi2):
@@ -11,11 +11,14 @@ class LineThread(threading.Thread):
         self.roi2 = roi2
         self.latestFrame = None
         self.running = True
+        self.controller = CarController()
 
     def stop(self):
         self.running = False
 
     def run(self):
+        steerflag1 = False
+        steerflag2 = False
         while self.running:
             ret, frame = self.cam.read()
             if not ret:
@@ -23,5 +26,16 @@ class LineThread(threading.Thread):
             frame = frame[self.roi1[0]:self.roi1[1], self.roi2[0]:self.roi2[1]]
             intersection, frame = self.detector.getIntersection(frame)
             self.latestFrame = frame
+            if intersection >= self.roi1[1]*0.6 and not steerflag1:
+                steerflag1 = True
+                steerflag2 = False
+                if self.cam.camPos == "left":
+                    self.controller.steer(50, "right")
+                elif self.cam.camPos == "right":
+                    self.controller.steer(50, "left")
+            elif not steerflag2:
+                steerflag1 = False
+                steerflag2 = True
+                self.controller.steer(0, "left")
             time.sleep(1/30)
         self.cam.release()

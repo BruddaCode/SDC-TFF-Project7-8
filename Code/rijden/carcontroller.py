@@ -1,6 +1,3 @@
-from rijden.steer import steer_message
-from rijden.motor import forward_message
-from rijden.brake import set_brake_force_message
 import can
 import struct
 
@@ -17,6 +14,9 @@ class CarController:
     def drive(self, speed: int):
         if not (0 <= speed <= 100):
             raise ValueError("Speed must be between 0 and 100")
+        
+        if speed >=1:
+            self.brake(0)
         
         message = can.Message(
             arbitration_id=0x330,
@@ -44,6 +44,9 @@ class CarController:
     def brake(self, force: int = 100):
         if not (0 <= force <= 100):
             raise ValueError("Force must be between 0 and 100")
+        
+        if force >=1:
+            self.drive(0)
         
         message = can.Message(
             arbitration_id=0x110,
