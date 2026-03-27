@@ -12,6 +12,9 @@ for byte 3 adjust the following values for the following effects:
 """
 
 def forward_message(speed):
+    if not (0 <= speed <= 100):
+        raise ValueError("Speed must be between 0 and 100.")
+    
     motor_message = can.Message(
         arbitration_id=0x330,
         data=[speed, 0, 1, 0, 0, 0, 0, 0],
@@ -75,6 +78,9 @@ This function sends a CAN message to move the kart backward.
 #     return motor_task
 
 def move_backward_message(bus, speed):
+    if not (0 <= speed <= 100):
+        raise ValueError("Speed must be between 0 and 100.")
+    
     motor_message = can.Message(
         arbitration_id=0x330,
         data=[speed, 0, 2, 0, 0, 0, 0, 0],
