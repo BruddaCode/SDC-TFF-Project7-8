@@ -3,6 +3,7 @@ import cv2
 from StereoCamera import StereoCamera
 from LineDetector import LineDetector
 from LineThread import LineThread
+from rijden.carcontroller import CarController
 
 def getCameraId(cameraName):
     cameraIDs = []
