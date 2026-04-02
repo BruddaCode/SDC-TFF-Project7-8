@@ -18,7 +18,7 @@ class LineThread(threading.Thread):
     def run(self):
         steerflag1 = False
         steerflag2 = False
-        self.controller.drive(255)
+        self.controller.drive(100)
         while self.running:
             frame = self.cam.getFrame()
             frame = frame[self.roi1[0]:self.roi1[1], self.roi2[0]:self.roi2[1]]
