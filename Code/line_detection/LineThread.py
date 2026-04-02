@@ -24,7 +24,7 @@ class LineThread(threading.Thread):
             frame = frame[self.roi1[0]:self.roi1[1], self.roi2[0]:self.roi2[1]]
             intersection, frame = self.detector.getIntersection(frame)
             self.latestFrame = frame
-            if intersection >= self.roi1[1]*0.6 and not steerflag1:
+            if intersection[1] >= self.roi1[1]*0.6 and not steerflag1:
                 steerflag1 = True
                 steerflag2 = False
                 if self.cam.camPos == "left":
