@@ -28,10 +28,11 @@ if __name__ == "__main__":
     video = cv2.VideoCapture("../Test-Videos-12-03/test3-720/left.mp4") 
     video2 = cv2.VideoCapture("../Test-Videos-12-03/test3-720/right.mp4")
     roi = [(0,449), (0,639), (640,1279)]
+    controller = CarController()
     
 
-    thread = LineThread(video, detector, roi[0], roi[1])
-    thread2 = LineThread(video2, detector, roi[0], roi[2])
+    thread = LineThread(video, detector, controller, roi[0], roi[1])
+    thread2 = LineThread(video2, detector, controller, roi[0], roi[2])
     thread.start()
     thread2.start()
     while True:

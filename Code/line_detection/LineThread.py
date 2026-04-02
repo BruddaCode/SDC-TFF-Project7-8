@@ -1,9 +1,8 @@
 import threading
 import time
-from rijden.carcontroller import CarController
 
 class LineThread(threading.Thread):
-    def __init__(self, cam, detector, roi1, roi2):
+    def __init__(self, cam, detector, controller, roi1, roi2):
         threading.Thread.__init__(self)
         self.cam = cam
         self.detector = detector
@@ -11,7 +10,7 @@ class LineThread(threading.Thread):
         self.roi2 = roi2
         self.latestFrame = None
         self.running = True
-        self.controller = CarController()
+        self.controller = controller
 
     def stop(self):
         self.running = False
@@ -19,6 +18,7 @@ class LineThread(threading.Thread):
     def run(self):
         steerflag1 = False
         steerflag2 = False
+        self.controller.drive(255)
         while self.running:
             ret, frame = self.cam.read()
             if not ret:
