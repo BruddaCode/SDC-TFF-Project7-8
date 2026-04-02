@@ -12,8 +12,8 @@ class CarController:
         self.bus = can.Bus(interface='socketcan', channel='can0', bitrate=500000)
 
     def drive(self, speed: int):
-        if not (0 <= speed <= 100):
-            raise ValueError("Speed must be between 0 and 100")
+        if not (0 <= speed <= 255):
+            raise ValueError("Speed must be between 0 and 255")
         
         if speed >=1:
             self.brake(0)
