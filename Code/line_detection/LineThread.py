@@ -29,6 +29,6 @@ class LineThread(threading.Thread):
                 elif self.cam.camPos == "right":
                     self.controller.steer(100, "left")
             else:
-                self.controller.steer(0, "left")
+                # self.controller.steer(0, "left")
             time.sleep(1/30)
         self.cam.release()
