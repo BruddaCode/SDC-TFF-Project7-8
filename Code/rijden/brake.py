@@ -33,7 +33,7 @@ def set_brake_force_message(force):
     
     brake_message = can.Message(
         arbitration_id=0x110,
-        data=[0, 0, 0, 0, 0, 0, 0, 0],
+        data=[force, 0, 0, 0, 0, 0, 0, 0],
         is_extended_id=False
     )
     brake_message.data = [force] + [0]*7
