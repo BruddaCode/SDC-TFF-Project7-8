@@ -29,9 +29,9 @@ class LineThread(threading.Thread):
                 steerflag1 = True
                 steerflag2 = False
                 if self.cam.camPos == "left":
-                    self.controller.steer(50, "right")
+                    self.controller.steer(100, "right")
                 elif self.cam.camPos == "right":
-                    self.controller.steer(50, "left")
+                    self.controller.steer(100, "left")
             elif not steerflag2:
                 steerflag1 = False
                 steerflag2 = True
