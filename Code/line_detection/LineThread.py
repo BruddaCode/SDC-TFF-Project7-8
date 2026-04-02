@@ -16,9 +16,9 @@ class LineThread(threading.Thread):
         self.running = False
 
     def run(self):
-        self.controller.drive(100)
+        self.controller.drive(50)
         while self.running:
-            self.controller.drive(100)
+            self.controller.drive(50)
             frame = self.cam.getFrame()
             frame = frame[self.roi1[0]:self.roi1[1], self.roi2[0]:self.roi2[1]]
             intersection, frame = self.detector.getIntersection(frame)
