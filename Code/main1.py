@@ -1,8 +1,8 @@
 from cv2_enumerate_cameras import enumerate_cameras
 import cv2
-from StereoCamera import StereoCamera
-from LineDetector import LineDetector
-from LineThread import LineThread
+from line_detection.StereoCamera import StereoCamera
+from line_detection.LineDetector import LineDetector
+from line_detection.LineThread import LineThread
 from rijden.carcontroller import CarController
 
 def getCameraId(cameraName):
