@@ -20,9 +20,7 @@ class LineThread(threading.Thread):
         steerflag2 = False
         self.controller.drive(255)
         while self.running:
-            ret, frame = self.cam.getFrame()
-            if not ret:
-                break
+            frame = self.cam.getFrame()
             frame = frame[self.roi1[0]:self.roi1[1], self.roi2[0]:self.roi2[1]]
             intersection, frame = self.detector.getIntersection(frame)
             self.latestFrame = frame
