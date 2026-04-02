@@ -26,8 +26,10 @@ class LineThread(threading.Thread):
             if intersection[1] >= self.roi1[1]*0.6:
                 if self.cam.camPos == "left":
                     self.controller.steer(30, "right")
+                    print("steering right")
                 elif self.cam.camPos == "right":
                     self.controller.steer(30, "left")
+                    print("steering left")
             # else:
                 # self.controller.steer(0, "left")
             time.sleep(1/30)
