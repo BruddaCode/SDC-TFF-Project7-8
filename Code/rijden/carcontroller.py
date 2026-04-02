@@ -33,6 +33,7 @@ class CarController:
             angleBytes = struct.pack('<f', angle/100*(-1.25))
         if direction == "right":
             angleBytes = struct.pack('<f', angle/100*1.25)
+            print("turning the wheels to the right")
 
         message = can.Message(
             arbitration_id=0x220,
