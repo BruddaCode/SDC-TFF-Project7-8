@@ -26,7 +26,7 @@ class LineThread(threading.Thread):
             self.latestFrame = frame
             if intersection is not None:
                 if self.steerRoi[0] <= intersection[1] <= self.steerRoi[1]:
-                    percentage = 100 * ((intersection[1] - self.steerRoi[0]) / (self.steerRoi[1] - self.steerRoi[0]))
+                    percentage = int(100 * ((intersection[1] - self.steerRoi[0]) / (self.steerRoi[1] - self.steerRoi[0])))
                     if self.cam.camPos == "left":
                         self.controller.steer(percentage, "right")
                         print("steering right")
