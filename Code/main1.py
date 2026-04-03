@@ -1,9 +1,9 @@
-from cv2_enumerate_cameras import enumerate_cameras
-import cv2
 from line_detection.StereoCamera import StereoCamera
-from line_detection.LineDetector import LineDetector
 from line_detection.LineThread import LineThread
 from rijden.carcontroller import CarController
+
+from cv2_enumerate_cameras import enumerate_cameras
+import cv2
 
 def getCameraId(cameraName):
     cameraIDs = []
@@ -21,18 +21,16 @@ def getCameraId(cameraName):
 if __name__ == "__main__":
     ids = getCameraId("logitech")
     names = ["left", "middle", "right"]
-    camL = StereoCamera(ids[0], names[0])
-    camM = StereoCamera(ids[1], names[1])
-    camR = StereoCamera(ids[2], names[2])
-    detector = LineDetector()
-    # video = cv2.VideoCapture("../Test-Videos-12-03/test3-720/left.mp4") 
-    # video2 = cv2.VideoCapture("../Test-Videos-12-03/test3-720/right.mp4")
+    # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
+    # camL = StereoCamera(id=ids[0], camPos=names[0])
+    # camR = StereoCamera(id=ids[2], camPos=names[2])
+    camL = StereoCamera(videoPath="../Test-Videos-12-03/test3-720/left.mp4", camPos=names[0])
+    camR = StereoCamera(videoPath="../Test-Videos-12-03/test3-720/right.mp4", camPos=names[2])
     roi = [(0,449), (0,639), (640,1279)]
     controller = CarController()
     
-
-    thread = LineThread(camL, detector, controller, roi[0], roi[1])
-    thread2 = LineThread(camR, detector, controller, roi[0], roi[2])
+    thread = LineThread(camL, controller, (roi[0], roi[1]))
+    thread2 = LineThread(camR, controller, (roi[0], roi[2]))
     thread.start()
     thread2.start()
     while True:
