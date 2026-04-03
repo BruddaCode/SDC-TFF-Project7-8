@@ -25,7 +25,7 @@ class LineThread(threading.Thread):
             
             # if there is no intersection, keep driving straight
             if intersection is None:
-                pass
+                continue
             
             # if there is an intersection, steer based on the position of the intersection
             if self.steerRoi[0] <= intersection[1] <= self.steerRoi[1]:

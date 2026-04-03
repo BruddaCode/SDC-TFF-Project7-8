@@ -24,8 +24,8 @@ if __name__ == "__main__":
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
     # camL = StereoCamera(id=ids[0], camPos=names[0])
     # camR = StereoCamera(id=ids[2], camPos=names[2])
-    camL = StereoCamera(videoPath="../Test-Videos-12-03/test3-720/left.mp4", camPos=names[0])
-    camR = StereoCamera(videoPath="../Test-Videos-12-03/test3-720/right.mp4", camPos=names[2])
+    camL = StereoCamera(videoPath="2026-04-02-test3-720/left.mp4", camPos=names[0])
+    camR = StereoCamera(videoPath="2026-04-02-test3-720/right.mp4", camPos=names[2])
     roi = [(0,449), (0,639), (640,1279)]
     controller = CarController()
     
@@ -36,10 +36,10 @@ if __name__ == "__main__":
     while True:
         frame = thread.latestFrame
         if frame is not None:
-            cv2.imshow("Bert", frame)
+            cv2.imshow(camL.camPos, frame)
         frame = thread2.latestFrame
         if frame is not None:
-            cv2.imshow("Ernie", frame)
+            cv2.imshow(camR.camPos, frame)
         if cv2.waitKey(30) & 0xFF == ord('q'):
             thread.stop()
             thread2.stop()
