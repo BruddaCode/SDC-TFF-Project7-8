@@ -46,7 +46,7 @@ class LineDetector():
                     intersections.append(intersection)
 
         cv2.line(frame,(int(width/2),0),(int(width/2),height),(255,255,0),2)
-        cv2.line(frame,(0,270),(639,270),(100,10,200),2)    
+        cv2.line(frame,(0,135),(639,135),(100,10,200),2)    
         if intersections is not None and len(intersections) >= 2:
             lowest_intersection = max(intersections,)
             cv2.circle(frame, lowest_intersection, 10, (255,0,0), -1)
