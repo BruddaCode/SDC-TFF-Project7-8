@@ -4,7 +4,7 @@ import glob
 import os
 
 # Chessboard dimensions (internal corners)
-grid_size = (9, 6) # uit mijn hoofd moet je alleen de interne hoeken tellen, dus 10x7 squares = 9x6 corners ff als voorbeeld, pas aan naar jouw bord
+grid_size = (6, 8) # uit mijn hoofd moet je alleen de interne hoeken tellen, dus 10x7 squares = 9x6 corners ff als voorbeeld, pas aan naar jouw bord
 square_size = 2.0  # cm
 cameraID = 0  # cameraID, moet je ff mee spelen, begin met 0 en als dat niet werkt, probeer 1, 2, etc. totdat je de middelste camera hebt gevonden
 amount_of_frames = 20 # hoeveelheid fotos die je wilt maken.
@@ -87,5 +87,13 @@ print("Reprojection Error:", ret)
 
 # Save calibration data
 # save as txt file also for easy access
-np.savetxt(os.path.join(path, 'camera_data.txt'), (camera_matrix, dist_coeffs, ret), fmt='%s', header='Camera Matrix, Distortion Coefficients, Reprojection Error')
-np.savez(os.path.join(path, 'calibration_data.npz'), camera_matrix=camera_matrix, dist_coeffs=dist_coeffs)   
+calibration_data = {
+    'camera_matrix': camera_matrix,
+    'dist_coeffs': dist_coeffs,
+    'reprojection_error': ret
+}
+
+with open(path + f'/calibration_data_{cameraID}.txt', 'w') as f:
+    f.write(f"Camera Matrix:\n{camera_matrix}\n")
+    f.write(f"Distortion Coefficients:\n{dist_coeffs}\n")
+    f.write(f"Reprojection Error: {ret}\n")
