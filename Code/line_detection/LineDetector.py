@@ -41,12 +41,12 @@ class LineDetector():
             for line in lines:  
                 x1,y1,x2,y2 = line[0]  
                 cv2.line(frame,(x1,y1),(x2,y2),(0,0,255),2)
-                intersection = self.intersect((x1,y1), (x2,y2), int(width/2), height)
+                intersection = self.intersect((x1,y1), (x2,y2), int(width/2+100), height)
                 if intersection is not None:    
                     intersections.append(intersection)
 
-        cv2.line(frame,(int(width/2),0),(int(width/2),height),(255,255,0),2)
-        cv2.line(frame,(0,135),(639,135),(100,10,200),2)    
+        cv2.line(frame,(int(width/2)+100,0),(int(width/2+100),height),(255,255,0),2)
+        cv2.line(frame,(0,225),(639,225),(100,10,200),2)    
         if intersections is not None and len(intersections) >= 2:
             lowest_intersection = max(intersections,)
             cv2.circle(frame, lowest_intersection, 10, (255,0,0), -1)
