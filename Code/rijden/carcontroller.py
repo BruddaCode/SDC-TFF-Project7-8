@@ -59,3 +59,6 @@ class CarController:
     def stop(self):
         self.drive(0)
         self.brake()
+
+    def turnOffBus(self):
+        self.bus.shutdown()

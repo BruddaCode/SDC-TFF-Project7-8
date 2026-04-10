@@ -4,9 +4,9 @@ import glob
 import os
 
 # Chessboard dimensions (internal corners)
-grid_size = (6, 8) # uit mijn hoofd moet je alleen de interne hoeken tellen, dus 10x7 squares = 9x6 corners ff als voorbeeld, pas aan naar jouw bord
-square_size = 2.0  # cm
-cameraID = 0  # cameraID, moet je ff mee spelen, begin met 0 en als dat niet werkt, probeer 1, 2, etc. totdat je de middelste camera hebt gevonden
+grid_size = (7, 9) # uit mijn hoofd moet je alleen de interne hoeken tellen, dus 10x7 squares = 9x6 corners ff als voorbeeld, pas aan naar jouw bord
+square_size = 12.5  # cm
+cameraID = 2  # cameraID, moet je ff mee spelen, begin met 0 en als dat niet werkt, probeer 1, 2, etc. totdat je de middelste camera hebt gevonden
 amount_of_frames = 20 # hoeveelheid fotos die je wilt maken.
 resolution = (1920, 1080) 
 fps = 30

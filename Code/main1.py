@@ -22,11 +22,11 @@ if __name__ == "__main__":
     ids = getCameraId("logitech")
     names = ["left", "middle", "right"]
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
-    # camL = StereoCamera(id=ids[0], camPos=names[0])
-    # camR = StereoCamera(id=ids[2], camPos=names[2])
-    camL = StereoCamera(videoPath="2026-04-02-test3-720/left.mp4", camPos=names[0])
-    camR = StereoCamera(videoPath="2026-04-02-test3-720/right.mp4", camPos=names[2])
-    roi = [(0,449), (0,639), (640,1279)]
+    camL = StereoCamera(index=ids[0], camPos=names[0])
+    camR = StereoCamera(index=ids[2], camPos=names[2])
+    # camL = StereoCamera(videoPath="2026-04-02-test3-720/left.mp4", camPos=names[0])
+    # camR = StereoCamera(videoPath="2026-04-02-test3-720/right.mp4", camPos=names[2])
+    roi = [(0,449), (150,789), (490,1129)]
     controller = CarController()
     
     thread = LineThread(camL, controller, (roi[0], roi[1]))

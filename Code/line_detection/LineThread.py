@@ -11,14 +11,14 @@ class LineThread(threading.Thread):
         self.latestFrame = None
         self.running = True
         self.roi = roi
-        self.steerRoi = (roi[0][1]*0.3, roi[0][1]*0.8)
+        self.steerRoi = (roi[0][1]*0.4, roi[0][1]*0.9)
 
     def stop(self):
         self.running = False
 
     def run(self):
         while self.running:
-            self.controller.drive(50)
+            self.controller.drive(40)
             frame = self.cam.getFrame()[self.roi[0][0]:self.roi[0][1], self.roi[1][0]:self.roi[1][1]]
             intersection, frame = self.detector.getIntersection(frame)
             self.latestFrame = frame
@@ -48,3 +48,4 @@ class LineThread(threading.Thread):
                 
             time.sleep(1/30)
         self.cam.release()
+        self.controller.turnOffBus()
