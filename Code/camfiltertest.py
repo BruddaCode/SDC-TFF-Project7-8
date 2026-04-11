@@ -5,28 +5,124 @@ import time
 camL = cv2.VideoCapture("_2026-04-02-test3-720/left.mp4")
 camR = cv2.VideoCapture("_2026-04-02-test3-720/right.mp4")
 
-blur = (10, 10)
+# =========================
+# PARAMETER EXPLANATION (provided by ChatGPT)
+# =========================
+
+# --- Blur ---
+blur = (9, 9)
+# Size of Gaussian kernel (must be odd numbers ideally, e.g. (9,9), (11,11))
+# Larger = more smoothing → less noise BUT weaker / thicker edges
+# Too large → lane lines get washed out
+
 sigma = 15
+# Standard deviation for Gaussian blur
+# Higher = stronger blur effect
+# Too high → destroys edge detail completely
+
+# --- Thresholding (NOT for use with Canny) ---
 contrast_thresholds = (200, 255)
+# Binary threshold: pixels >200 → 255 (white), else 0
+# Higher lower-bound → only very bright pixels kept
+# Too high → dull lane lines disappear
+
+# --- CLAHE (lighting correction) ---
 clipLimit = 2.0
+# Contrast limiting: higher = more aggressive contrast boost
+# Too high → noise and artifacts get amplified
+
 tileGridSize = (8, 8)
+# Size of local regions for CLAHE
+# Smaller tiles → more local contrast correction
+# Too small → patchy / unnatural image
+
+# --- Canny Edge Detection ---
 canny_threshold1 = 50
+# Lower threshold: sensitivity to weak edges
+# Lower = more edges (including noise)
+
 canny_threshold2 = 150
+# Upper threshold: strong edge cutoff
+# Higher = fewer but stronger edges
+# Ratio between thresholds matters (usually ~1:2 or 1:3)
+
+# --- Hough Transform ---
 hough_threshold = 120
+# Minimum number of votes to detect a line
+# Higher = fewer, more confident lines
+# Too high → misses real lines
+
 minLineLength = 80
+# Minimum length of a detected line (in pixels)
+# Too high → short lane segments ignored
+
 maxLineGap = 50
+# Max gap between segments to connect into one line
+# Too high → unrelated segments get merged
+
 hough_pi = 180
+# Angular resolution (np.pi / hough_pi)
+# Higher value → finer angle precision but slower
+
+# --- Region of Interest (ROI) ---
 roi = (0, 225, 640, 255)
+# Defines area of interest (likely bottom part of frame)
+# Ignoring irrelevant regions improves stability
+
 vertical_line_x = 320
 horizontal_line_y = 225
+# Likely reference lines (center / horizon)
+# Used for filtering or splitting left/right lanes
+
+# --- Morphological operations ---
 canny_kernel = (3, 3)
+# Kernel size for dilation/erosion
+# Larger = stronger effect
+
 canny_dilation_iterations = 1
+# Expands edges (connects broken lines)
+# Too much → thick, merged edges
+
 canny_erosion_iterations = 1
+# Shrinks edges (removes noise)
+# Too much → deletes real edges
+
+# --- HLS color filtering ---
 hls_lower_bound = (0, 180, 0)
 hls_upper_bound = (255, 255, 80)
+# Filters "white-like" pixels:
+# L (lightness) high → bright
+# S (saturation) low → not colorful
+# If lower L too high → dull lines disappear
+# If upper S too high → non-white noise included
+
+# --- Adaptive Threshold (alternative to Canny) ---
 adaptive_range = 11
+# Size of neighborhood used for thresholding (must be odd)
+# Larger = more global behavior
+
 adaptive_constant = 2
+# Value subtracted from mean
+# Higher → fewer white pixels
+
 adaptive_threshold = 255
+# Output value for pixels passing threshold
+
+# =========================
+# IMPORTANT WARNING
+# =========================
+
+# CANNY vs THRESHOLDING:
+# ---------------------
+# Canny already produces a binary edge image.
+# Applying thresholding (adaptive or fixed) AFTER Canny:
+#   → does nothing useful
+#   → can even degrade edge quality
+#
+# So:
+#   ✔ Use Canny OR thresholding
+#   ❌ Do NOT use both in the same pipeline
+
 enable_clahe = 0
 enable_blur = 0
 enable_canny = 0
