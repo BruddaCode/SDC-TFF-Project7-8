@@ -1,9 +1,11 @@
 import cv2
 import numpy as np
+import json
 
 class LineDetector():
     def __init__(self):
-        pass
+        with open('config.json', 'r') as file:
+            self.config = json.load(file)
 
     def cross(self, a, b):
         return a[0]*b[1] - a[1]*b[0]
@@ -20,22 +22,24 @@ class LineDetector():
 
     def processFrame(self, frame):
         # apply gaussian blur for less noise on the frame
-        filteredFrame = cv2.GaussianBlur(frame, (15, 15), 1.4)
+        filteredFrame = cv2.GaussianBlur(frame, (int(self.config["blur"].split(',')[0]), int(self.config["blur"].split(',')[1])), float(self.config["blur"].split(',')[2]))
 
         # Turn the frame gray
         filteredFrame = cv2.cvtColor(filteredFrame, cv2.COLOR_BGR2GRAY)
 
         # filter between dark and light and make dark black and light white
-        _, filteredFrame = cv2.threshold(filteredFrame, 200, 255, cv2.THRESH_BINARY)
+        _, filteredFrame = cv2.threshold(filteredFrame, int(self.config["threshold"].split(',')[0]), int(self.config["threshold"].split(',')[1]), cv2.THRESH_BINARY)
 
-        kernel = np.array([[10, 5, 10],[5, 10, 5],[10, 5, 10]])
+        kernel = np.array([[int(self.config["vector1"].split(',')[0]), int(self.config["vector1"].split(',')[1]), int(self.config["vector1"].split(',')[2])],
+                           [int(self.config["vector2"].split(',')[0]), int(self.config["vector2"].split(',')[1]), int(self.config["vector2"].split(',')[2])],
+                           [int(self.config["vector3"].split(',')[0]), int(self.config["vector3"].split(',')[1]), int(self.config["vector3"].split(',')[2])]])
         dst = cv2.filter2D(filteredFrame, -1, kernel)
         # cv2.imshow("zwartwit", dst)
         return dst
     
     def getIntersection(self, frame):
         intersections = []
-        lines = cv2.HoughLinesP(self.processFrame(frame), 1, np.pi/180, 120, minLineLength=80, maxLineGap=50)
+        lines = cv2.HoughLinesP(self.processFrame(frame), 1, np.pi/180, int(self.config["hough"].split(',')[0]), minLineLength=int(self.config["hough"].split(',')[1]), maxLineGap=int(self.config["hough"].split(',')[2]))
         height, width, _ = frame.shape
         if lines is not None:
             for line in lines:  
