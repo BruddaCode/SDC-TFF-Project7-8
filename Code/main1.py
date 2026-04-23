@@ -4,6 +4,7 @@ from rijden.carcontroller import CarController
 
 from cv2_enumerate_cameras import enumerate_cameras
 import cv2
+import json
 
 def getCameraId(cameraName):
     cameraIDs = []
@@ -19,6 +20,9 @@ def getCameraId(cameraName):
 
 
 if __name__ == "__main__":
+    with open('config.json', 'r') as file:
+        config = json.load(file)
+    
     ids = getCameraId("logitech")
     names = ["left", "middle", "right"]
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
@@ -29,11 +33,12 @@ if __name__ == "__main__":
     roi = [(0,449), (150,789), (490,1129)]
     controller = CarController()
     
-    thread = LineThread(camL, controller, (roi[0], roi[1]))
-    thread2 = LineThread(camR, controller, (roi[0], roi[2]))
+    thread = LineThread(camL, controller, ((int(config["roiHeight"].split(',')[0]),int(config["roiHeight"].split(',')[1])), (int(config["roiWidthLeft"].split(',')[0]),int(config["roiWidthLeft"].split(',')[1]))))
+    thread2 = LineThread(camR, controller, ((int(config["roiHeight"].split(',')[0]),int(config["roiHeight"].split(',')[1])), (int(config["roiWidthRight"].split(',')[0]),int(config["roiWidthRight"].split(',')[1]))))
     thread.start()
     thread2.start()
     while True:
+        # controller.drive(40)
         frame = thread.latestFrame
         if frame is not None:
             cv2.imshow(camL.camPos, frame)

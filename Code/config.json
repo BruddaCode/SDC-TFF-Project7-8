@@ -1,0 +1,11 @@
+{
+    "roiHeight":"80,640",
+    "roiWidthLeft":"430,840",
+    "roiWidthRight":"850,440",
+    "blur":"9,9,1.4",
+    "threshold":"200,255",
+    "vector1":"10,5,10",
+    "vector2":"5,10,5",
+    "vector3":"10,5,10",
+    "hough":"120,80,50"
+}
