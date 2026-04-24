@@ -10,6 +10,7 @@ main.py will use this to control the car's movement, steering, and braking.
 class CarController:
     def __init__(self):
         self.bus = can.Bus(interface='socketcan', channel='can0', bitrate=500000)
+        self.canMessageSpeed = 0.04
 
     def drive(self, speed: int):
         if not (0 <= speed <= 255):
@@ -23,24 +24,21 @@ class CarController:
             data=[speed, 0, 1, 0, 0, 0, 0, 0],
             is_extended_id=False
         )
-        self.bus.send(message)
+        self.bus.send_periodic(message,self.canMessageSpeed)
 
-    def steer(self, angle: int, direction: str):
-        if not (0 <= angle <= 100):
-            raise ValueError("Angle must be between 0 and 100")
+    def steer(self, angle: int,):
+        if not (-100 <= angle <= 100):
+            raise ValueError("Angle must be between -100 and 100")
         
-        if direction == "left":
-            angleBytes = struct.pack('<f', angle/100*(-1.25))
-        if direction == "right":
-            angleBytes = struct.pack('<f', angle/100*1.25)
-            # print(angle)
+        angleBytes = struct.pack('<f', angle/100*1.25)
+        # print(angle)
 
         message = can.Message(
             arbitration_id=0x220,
             data=[*angleBytes, 0, 0, 0, 0],
             is_extended_id=False
         )
-        self.bus.send(message)
+        self.bus.send_periodic(message,self.canMessageSpeed)
 
     def brake(self, force: int = 100):
         if not (0 <= force <= 100):
@@ -54,7 +52,7 @@ class CarController:
             data=[force, 0, 0, 0, 0, 0, 0, 0],
             is_extended_id=False
         )
-        self.bus.send(message)
+        self.bus.send_periodic(message,self.canMessageSpeed)
 
     def stop(self):
         self.drive(0)

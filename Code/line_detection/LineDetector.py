@@ -4,8 +4,9 @@ import json
 
 class LineDetector():
     def __init__(self):
-        with open('config.json', 'r') as file:
-            self.config = json.load(file)
+        # with open('config.json', 'r') as file:
+        #     self.config = json.load(file)
+        pass
 
     def cross(self, a, b):
         return a[0]*b[1] - a[1]*b[0]
@@ -22,35 +23,44 @@ class LineDetector():
 
     def processFrame(self, frame):
         # apply gaussian blur for less noise on the frame
-        filteredFrame = cv2.GaussianBlur(frame, (int(self.config["blur"].split(',')[0]), int(self.config["blur"].split(',')[1])), float(self.config["blur"].split(',')[2]))
+        filteredFrame = cv2.GaussianBlur(frame, (9, 9), 1.4)
 
         # Turn the frame gray
         filteredFrame = cv2.cvtColor(filteredFrame, cv2.COLOR_BGR2GRAY)
 
         # filter between dark and light and make dark black and light white
-        _, filteredFrame = cv2.threshold(filteredFrame, int(self.config["threshold"].split(',')[0]), int(self.config["threshold"].split(',')[1]), cv2.THRESH_BINARY)
+        _, filteredFrame = cv2.threshold(filteredFrame, 200, 255, cv2.THRESH_BINARY)
 
-        kernel = np.array([[int(self.config["vector1"].split(',')[0]), int(self.config["vector1"].split(',')[1]), int(self.config["vector1"].split(',')[2])],
-                           [int(self.config["vector2"].split(',')[0]), int(self.config["vector2"].split(',')[1]), int(self.config["vector2"].split(',')[2])],
-                           [int(self.config["vector3"].split(',')[0]), int(self.config["vector3"].split(',')[1]), int(self.config["vector3"].split(',')[2])]])
+        kernel = np.array([[10,5,10],
+                           [5,10,5],
+                           [10,5,10]])
         dst = cv2.filter2D(filteredFrame, -1, kernel)
         # cv2.imshow("zwartwit", dst)
         return dst
     
-    def getIntersection(self, frame):
+    def getIntersection(self, frame, pos):
         intersections = []
-        lines = cv2.HoughLinesP(self.processFrame(frame), 1, np.pi/180, int(self.config["hough"].split(',')[0]), minLineLength=int(self.config["hough"].split(',')[1]), maxLineGap=int(self.config["hough"].split(',')[2]))
+        lines = cv2.HoughLinesP(self.processFrame(frame), 1, np.pi/180, 120, minLineLength=120, maxLineGap=50)
         height, width, _ = frame.shape
+        vertical_line = 225
+        if pos == "right":
+            horizontal_line = int(max(0, width - (width/2+100)))
+        if pos == "left":
+            horizontal_line = int(width/2+100)
+
         if lines is not None:
             for line in lines:  
                 x1,y1,x2,y2 = line[0]  
                 cv2.line(frame,(x1,y1),(x2,y2),(0,0,255),2)
-                intersection = self.intersect((x1,y1), (x2,y2), int(width/2+100), height)
+                intersection = self.intersect((x1,y1), (x2,y2), horizontal_line, height)
                 if intersection is not None:    
                     intersections.append(intersection)
 
-        cv2.line(frame,(int(width/2)+100,0),(int(width/2+100),height),(255,255,0),2)
-        cv2.line(frame,(0,225),(639,225),(100,10,200),2)    
+        # horizontal line where detection is
+        cv2.line(frame,(horizontal_line,0),(horizontal_line,height),(255,255,0),2)
+        # vertical line representing the bounds of detection
+        cv2.line(frame,(0,vertical_line),(width,vertical_line),(100,10,200),2)   
+        
         if intersections is not None and len(intersections) >= 2:
             lowest_intersection = max(intersections,)
             cv2.circle(frame, lowest_intersection, 10, (255,0,0), -1)
