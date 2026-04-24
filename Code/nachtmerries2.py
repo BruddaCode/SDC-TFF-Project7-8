@@ -1,25 +1,23 @@
 # lijpe handel voor een custom roi
 
-import os
 import cv2
 import numpy as np
 
 video_path = "2026-04-02-test3-720/left.mp4"
 
-
-def has_display() -> bool:
-    return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
-
-
-show_preview = has_display()
 cap = cv2.VideoCapture(video_path)
 
 if not cap.isOpened():
     print(f"Could not open video file: {video_path}")
     raise SystemExit(1)
 
-if not show_preview:
-    print("No graphical display detected. Running in headless mode (no cv2.imshow).")
+
+def _noop(_):
+    pass
+
+
+trackbars_ready = False
+controls_window = "Controls"
 
 while True:
     ret, frame = cap.read()
@@ -27,29 +25,53 @@ while True:
         break
 
     height, width = frame.shape[:2]
-    roi = np.array([[100, 100], [300, 100], [300, 300], [100, 300]], np.int32)
+
+    if not trackbars_ready:
+        cv2.namedWindow(controls_window)
+
+        cv2.createTrackbar("x1", controls_window, 100, width - 1, _noop)
+        cv2.createTrackbar("y1", controls_window, 100, height - 1, _noop)
+        cv2.createTrackbar("x2", controls_window, min(500, width - 1), width - 1, _noop)
+        cv2.createTrackbar("y2", controls_window, min(200, height - 1), height - 1, _noop)
+        cv2.createTrackbar("x3", controls_window, min(300, width - 1), width - 1, _noop)
+        cv2.createTrackbar("y3", controls_window, min(300, height - 1), height - 1, _noop)
+        cv2.createTrackbar("x4", controls_window, 100, width - 1, _noop)
+        cv2.createTrackbar("y4", controls_window, min(300, height - 1), height - 1, _noop)
+        cv2.createTrackbar("threshold", controls_window, 128, 255, _noop)
+
+        trackbars_ready = True
+
+    x1 = cv2.getTrackbarPos("x1", controls_window)
+    y1 = cv2.getTrackbarPos("y1", controls_window)
+    x2 = cv2.getTrackbarPos("x2", controls_window)
+    y2 = cv2.getTrackbarPos("y2", controls_window)
+    x3 = cv2.getTrackbarPos("x3", controls_window)
+    y3 = cv2.getTrackbarPos("y3", controls_window)
+    x4 = cv2.getTrackbarPos("x4", controls_window)
+    y4 = cv2.getTrackbarPos("y4", controls_window)
+    threshold_value = cv2.getTrackbarPos("threshold", controls_window)
+
+    roi = np.array([[x1, y1], [x2, y2], [x3, y3], [x4, y4]], np.int32)
     roi = roi.reshape((-1, 1, 2))
     
     mask = np.zeros((height, width), dtype=np.uint8)
     
     cv2.fillPoly(mask, [roi], 255)
     
-    result = cv2.bitwise_and(frame, frame, mask=mask)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # black and white filter
+    _, filtered = cv2.threshold(gray, threshold_value, 255, cv2.THRESH_BINARY)
+    filtered = cv2.cvtColor(filtered, cv2.COLOR_GRAY2BGR)
     
-    x,y,w,h = cv2.boundingRect(roi)
-    roi_crop = result[y:y+h, x:x+w]
+    overlay = frame.copy()
+    overlay[mask == 255] = filtered[mask == 255]
+    cv2.polylines(overlay, [roi], isClosed=True, color=(0, 255, 0), thickness=2)
 
-    if show_preview:
-        cv2.imshow('ROI Crop', roi_crop)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    else:
-        output_path = "roi_crop_headless.png"
-        cv2.imwrite(output_path, roi_crop)
-        print(f"Saved ROI preview to {output_path}")
+    cv2.imshow('Overlay', overlay)
+    
+    if cv2.waitKey(30) & 0xFF == ord('q'):
         break
 
-cap.release()
 
-if show_preview:
-    cv2.destroyAllWindows()
+cap.release()
+cv2.destroyAllWindows()
