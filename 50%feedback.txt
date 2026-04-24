@@ -1,0 +1,92 @@
+Feedback indiening
+Algemene feedback
+50% presentatie
+
+Algemene opmerkingen
++ Alle teams goede voorbereiding, mooie presentaties, goed rekening gehouden met het publiek!
++ Jullie zitten goed in de materie, duidelijk dat merendeel (!) van de studenten weet wat het probleem van de opdrachtgever is, welke vertaalslag jullie hebben gemaakt naar een technische oplossing, welke keuzes jullie hierin hebben gemaakt en waar het team aan werkt.
+
+Tips: Let op spelfouten in de presentatie (lees het nog even door), professionele houding (‘hoe’ je er staat, maakt uit, bijv. handen uit je broekzakken, etc. of wat je vertelt)
+
+SDC Closed
+Team compleet
+Corne intro RDW, doel SDC (doe je goed, ook al eerder tijdens de SR)
+
+Waarom zitten de camera's eigenlijk op die hoogte?
+
+Merel licht de 7 challenges toe (Zit daar een volgorde is?)
+
+Per challenge toelichting (Corne 'ik heb meerdere filmpjes')
+
+Tip: neem de filmpjes op in je presentatie
+
+Track wordt ook voor andere doeleinden gebruikt.
+
+Binnen de lijnen rijden: hoe houdt de kart de positie op de weg?
+
+Hoe nu het zebrapad oversteken (midden van de ban i.p.v. ontwijken van de lijnen)
+
+Hannah. Lidar en nuck (sorry, wat?)
+
+Inhalen voertuig is mix van lidar en ...
+
+Merel: Zebrapad nog niet aan begonnen. Middelste camera + objectdetectie
+
+Tom: Herkennen verkeersborden. Gebruik gemaakt van oude objectdetectiemodel van eerder teams.
+
+Gisteren weer naar de RDW geweest (Top!).
+
+Detecteren stoplichten
+
+Hannah: Navigeren. Baan in kaart proberen te brengen. Technisch verhaal.
+
+Fabio: kruispunt: nog niet aan begonnen, maar wel duidelijk op welke manier ze daaraan willen gaan werken. We kunnen die nog niet doen met de dingen die we wel/niet hebben. Hoe dan?
+
+Merel: Projectdoelen: sommige nog niet aan begonnen. Het kan niet veranderen, het is een doorontwikkeling.
+
+
+
+Feedback/opmerkingen
+
+Weersomstandigheden (3 weken geleden afgelast ivm sneeuw en hagel)
+
+Gisteren testdag heel erg zonnig. Zijn er verschillen t.o.v. eerdere keren dat jullie daar geweest zijn?
+
+Wat heeft de meeste prioriterit?
+
+Jullie doen jezelf te kort, jullie maken heel goed gebruik van de testdagen! En het is een complexe challenge met andere Hogescholen en universiteiten met een echte deadline.
+
+Iteraties zijn belangrijk, het gaat niet alleen om de dingen die klaar zijn of werken.
+
+
+ALGEMENE FEEDBACK N.A.V. DE INGELEVERDE OPLEVERSETS
+
+Goed dat jullie gebruik hebben gemaakt van het feedbackmoment.
+
+Onderstaand opmerkingen en tips n.a.v. de 50% opleversets van de verschillende projectteams.
+
+Kijk goed naar de in te leveren bestandsformaten (zie cursushandleiding).
+
+Zorg dat je 'ergens' in je opleverset duidelijk maakt:
+
+Wat is de context waarbinnen het project plaatsvindt
+
+Welk probleem had de opdrachtgever voordat hij met jullie sprak
+
+Voor welke mogelijk technische oplossingen hebben jullie als team gekozen?
+
+Tip: maak 1 document waarin duidelijk wordt hoe jullie opleverset te lezen. Waar begin ik met het bekijken van de opleverset? Wat vind ik waar? Een readme hoeft niet genoeg te zijn om overzicht te hebben over de opleverset.
+
+Tip: maak duidelijk onderscheid tussen voor de opdracht relevante documenten (overdraagbaar) en werkdocumenten (zoals bijv. een urenverantwoording of samenwerkingscontract).
+
+Geef onderzoeken een duidelijke titel. Onderzoek is geen doel op zich, maar een manier om tot iets te komen. Kijk nog eens goed naar het materiaal van de workshop over het doen van literatuuronderzoek: https://maken.wikiwijs.nl/164140/Training_literatuuronderzoek_Hogeschool_Rotterdam en kijk nog eens goed naar de feedback die jullie kregen bij Project5/6.
+
+Tip: bestudeer elkaars werk kritisch. Lees het goed door, check of het klopt met de informatie uit andere bestanden en help elkaar bij de verbeterslag.
+
+Blijf alert op de verantwoording van de gemaakte keuzes (navolgbaarheid), op basis van requirements ga je verder.
+
+Denk alvast na over ideeën voor de 95% presentatie/ Eindmarkt.
+
+Tip: maak een overzicht van de projectdoelen en op welke manier jullie zelf denken deze aan te tonen met welke projectdocumentatie. Zoek hierin de balans op tussen hetgeen ‘school van je vraagt’, ‘de opdrachtgever van je wenst’ en ‘hetgeen je als team het liefst zou willen opleveren’.
+
+Let op: In de uiteindelijke opleverset wordt een evaluatie van de opdrachtgever gevraagd. Dat is dus een evaluatie van jullie opdrachtgever waarin hij/zij/X de ervaringen met jullie als projectteam beschrijft. We schrijven expres geen format voor, zodat jullie de ruimte kunnen nemen om kritische vragen te stellen aan de opdrachtgever. Ook dingen die jullie zelf belangrijk vonden kun je hierin terug laten komen. Het originele bestand van de opdrachtgever moet worden opgenomen in de opleverset.
