@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 import time
 
-camL = cv2.VideoCapture("_2026-04-02-test3-720/left.mp4")
-camR = cv2.VideoCapture("_2026-04-02-test3-720/right.mp4")
+camL = cv2.VideoCapture("2026-04-02-test3-720/left.mp4")
+camR = cv2.VideoCapture("2026-04-02-test3-720/right.mp4")
 
 # =========================
 # PARAMETER EXPLANATION (provided by ChatGPT)
