@@ -16,11 +16,23 @@ class LineThread(threading.Thread):
     def stop(self):
         self.running = False
 
+    def sendMessage(self, percentage):
+        if self.cam.camPos == "left":
+            # self.controller.steer(percentage)
+            print(f"steering right with percentage {percentage}")
+            
+        if self.cam.camPos == "right":
+            # self.controller.steer(-percentage)
+            print(f"steering left with percentage {percentage}")
+
+
     def run(self):
         while self.running:
-            self.controller.drive(40)
+            if self.controller is not None:
+                self.controller.drive(40)
             frame = self.cam.getFrame()[self.roi[0][0]:self.roi[0][1], self.roi[1][0]:self.roi[1][1]]
-            intersection, frame = self.detector.getIntersection(frame)
+            pos = self.cam.camPos
+            intersection, frame = self.detector.getIntersection(frame, pos)
             self.latestFrame = frame
             
             # if there is no intersection, keep driving straight
@@ -30,21 +42,12 @@ class LineThread(threading.Thread):
             # if there is an intersection, steer based on the position of the intersection
             if self.steerRoi[0] <= intersection[1] <= self.steerRoi[1]:
                 percentage = int(100 * ((intersection[1] - self.steerRoi[0]) / (self.steerRoi[1] - self.steerRoi[0])))
+                self.sendMessage(percentage)
             # if the intersection is above the steerRoi, steer with 100%
             elif intersection[1] > self.steerRoi[1]:
                 percentage = 100
+                self.sendMessage(percentage)
             # if the intersection is below the steerRoi, steer with 0%
-            else: # met bij testen kijken hoe de kart zich hiermee gedraagt
-                percentage = 0
-            
-            # check which camera is being used and steer in the opposite direction of the intersection
-            if self.cam.camPos == "left":
-                self.controller.steer(percentage, "right")
-                print(f"steering right with percentage {percentage}")
-            
-            if self.cam.camPos == "right":
-                self.controller.steer(percentage, "left")
-                print(f"steering left with percentage {percentage}")
                 
             time.sleep(1/30)
         self.cam.release()

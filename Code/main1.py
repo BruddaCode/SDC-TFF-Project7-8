@@ -20,21 +20,22 @@ def getCameraId(cameraName):
 
 
 if __name__ == "__main__":
-    with open('config.json', 'r') as file:
-        config = json.load(file)
+    # with open('config.json', 'r') as file:
+    #     config = json.load(file)
     
     ids = getCameraId("logitech")
     names = ["left", "middle", "right"]
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
-    camL = StereoCamera(index=ids[0], camPos=names[0])
-    camR = StereoCamera(index=ids[2], camPos=names[2])
-    # camL = StereoCamera(videoPath="2026-04-02-test3-720/left.mp4", camPos=names[0])
-    # camR = StereoCamera(videoPath="2026-04-02-test3-720/right.mp4", camPos=names[2])
-    roi = [(0,449), (150,789), (490,1129)]
-    controller = CarController()
+    # camL = StereoCamera(index=ids[0], camPos=names[0])
+    # camR = StereoCamera(index=ids[2], camPos=names[2])
+    camL = StereoCamera(videoPath="2026-04-02-test3-720/left.mp4", camPos=names[0])
+    camR = StereoCamera(videoPath="2026-04-02-test3-720/right.mp4", camPos=names[2])
+    roi = [(0,449), (0,639), (640,1279)]
+    # controller = CarController()
+    controller = None
     
-    thread = LineThread(camL, controller, ((int(config["roiHeight"].split(',')[0]),int(config["roiHeight"].split(',')[1])), (int(config["roiWidthLeft"].split(',')[0]),int(config["roiWidthLeft"].split(',')[1]))))
-    thread2 = LineThread(camR, controller, ((int(config["roiHeight"].split(',')[0]),int(config["roiHeight"].split(',')[1])), (int(config["roiWidthRight"].split(',')[0]),int(config["roiWidthRight"].split(',')[1]))))
+    thread = LineThread(camL, controller, (roi[0],roi[1]))
+    thread2 = LineThread(camR, controller, (roi[0],roi[2]))
     thread.start()
     thread2.start()
     while True:
