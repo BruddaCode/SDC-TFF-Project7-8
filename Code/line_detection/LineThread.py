@@ -12,6 +12,7 @@ class LineThread(threading.Thread):
         self.running = True
         self.roi = roi
         self.steerRoi = (roi[0][1]*0.4, roi[0][1]*0.9)
+        self.latestIntersection = None
 
     def stop(self):
         self.running = False
@@ -34,20 +35,7 @@ class LineThread(threading.Thread):
             pos = self.cam.camPos
             intersection, frame = self.detector.getIntersection(frame, pos)
             self.latestFrame = frame
-            
-            # if there is no intersection, keep driving straight
-            if intersection is None:
-                continue
-            
-            # if there is an intersection, steer based on the position of the intersection
-            if self.steerRoi[0] <= intersection[1] <= self.steerRoi[1]:
-                percentage = int(100 * ((intersection[1] - self.steerRoi[0]) / (self.steerRoi[1] - self.steerRoi[0])))
-                self.sendMessage(percentage)
-            # if the intersection is above the steerRoi, steer with 100%
-            elif intersection[1] > self.steerRoi[1]:
-                percentage = 100
-                self.sendMessage(percentage)
-            # if the intersection is below the steerRoi, steer with 0%
+            self.latestIntersection = intersection
                 
             time.sleep(1/30)
         self.cam.release()

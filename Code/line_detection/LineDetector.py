@@ -7,19 +7,22 @@ class LineDetector():
         # with open('config.json', 'r') as file:
         #     self.config = json.load(file)
         pass
-
-    def cross(self, a, b):
-        return a[0]*b[1] - a[1]*b[0]
     
-    def intersect(self, A, B, x, y):
-        if A[0] <= x <= B[0] or A[0]>= x >= B[0]:
-            if A[0] == B[0]:
-                return None
-            a = (B[1]-A[1])/(B[0]-A[0])
-            b = A[1] - a*A[0]
-            if 0 <= a*x + b <= y:
-                return (x, int(a*x + b))
-        return None
+    def intersect(self, A, B, C, D):
+        x1, y1 = A
+        x2, y2 = B
+        x3, y3 = C
+        x4, y4 = D
+
+        denom = (x1,x2)*(y3,y4) - (y1,y2)*(x3,x4)
+
+        if denom == 0:
+            return None
+        
+        px = ((x1*x2 - y1*y2)*(x3-x4) - (x1*x2)*(x3*y4 - y3*x4)) / denom
+        py = ((x1*x2 - y1*y2)*(y3-y4) - (y1*y2)*(x3*y4 - y3*x4)) / denom
+
+        return (int(px), int(py))
 
     def processFrame(self, frame):
         # apply gaussian blur for less noise on the frame
@@ -43,26 +46,28 @@ class LineDetector():
         lines = cv2.HoughLinesP(self.processFrame(frame), 1, np.pi/180, 120, minLineLength=120, maxLineGap=50)
         height, width, _ = frame.shape
         vertical_line = 225
-        if pos == "right":
-            horizontal_line = int(max(0, width - (width/2+100)))
+
         if pos == "left":
-            horizontal_line = int(width/2+100)
+            bumperA = (0,4)
+            bumperB = (764,720)
+        if pos == "right":
+            bumperA = (560, 720)
+            bumperB = (1280,200)
 
         if lines is not None:
             for line in lines:  
                 x1,y1,x2,y2 = line[0]  
                 cv2.line(frame,(x1,y1),(x2,y2),(0,0,255),2)
-                intersection = self.intersect((x1,y1), (x2,y2), horizontal_line, height)
+                intersection = self.intersect((x1,y1), (x2,y2), bumperA, bumperB)
                 if intersection is not None:    
                     intersections.append(intersection)
 
-        # horizontal line where detection is
-        cv2.line(frame,(horizontal_line,0),(horizontal_line,height),(255,255,0),2)
+        cv2.line(frame, bumperA, bumperB, (255,255,0), 2)
         # vertical line representing the bounds of detection
         cv2.line(frame,(0,vertical_line),(width,vertical_line),(100,10,200),2)   
         
         if intersections is not None and len(intersections) >= 2:
-            lowest_intersection = max(intersections,)
+            lowest_intersection = max(intersections, key=lambda p: p[1])
             cv2.circle(frame, lowest_intersection, 10, (255,0,0), -1)
             return (lowest_intersection, frame)
         elif len(intersections) != 0:
