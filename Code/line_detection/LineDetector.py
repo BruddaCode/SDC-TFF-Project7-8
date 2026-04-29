@@ -23,6 +23,25 @@ class LineDetector():
         py = ((x1*x2 - y1*y2)*(y3-y4) - (y1*y2)*(x3*y4 - y3*x4)) / denom
 
         return (int(px), int(py))
+    
+    def lineProgress(A, B, P):
+        ax, ay = A
+        bx, by = B
+        px, py = P
+
+        abx = bx - ax
+        aby = by - ay
+
+        apx = px - ax
+        apy = py - ay
+
+        denom = (abx)*(abx) + (aby)*(aby)
+        if denom == 0:
+            return 0.5
+        
+        t = (apx * abx + apy * aby) / denom
+
+        return max(0.0, min(1.0, t))
 
     def processFrame(self, frame):
         # apply gaussian blur for less noise on the frame
@@ -48,18 +67,18 @@ class LineDetector():
         vertical_line = 225
 
         if pos == "left":
-            bumperA = (0,4)
-            bumperB = (764,720)
+            bumperA = (0,0)
+            bumperB = (width,height)
         if pos == "right":
-            bumperA = (560, 720)
-            bumperB = (1280,200)
+            bumperA = (0, height)
+            bumperB = (width,0)
 
         if lines is not None:
             for line in lines:  
                 x1,y1,x2,y2 = line[0]  
-                cv2.line(frame,(x1,y1),(x2,y2),(0,0,255),2)
                 intersection = self.intersect((x1,y1), (x2,y2), bumperA, bumperB)
-                if intersection is not None:    
+                if intersection is not None:   
+                    intersection = self.lineProgress(bumperA, bumperB, intersection)
                     intersections.append(intersection)
 
         cv2.line(frame, bumperA, bumperB, (255,255,0), 2)

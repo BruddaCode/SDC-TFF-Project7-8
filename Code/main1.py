@@ -19,26 +19,6 @@ def getCameraId(cameraName):
         
     return cameraIDs
 
-def lineProgress(A, B, P):
-    ax, ay = A
-    bx, by = B
-    px, py = P
-
-    abx = bx - ax
-    aby = by - ay
-
-    apx = px - ax
-    apy = py - ay
-
-    denom = (abx)*(abx) + (aby)*(aby)
-    if denom == 0:
-        return 0.5
-    
-    t = (apx * abx + apy * aby) / denom
-
-    return max(0.0, min(1.0, t))
-
-
 if __name__ == "__main__": 
     ids = getCameraId("logitech")
     names = ["left", "middle", "right"]
@@ -49,12 +29,8 @@ if __name__ == "__main__":
     camR = StereoCamera(videoPath="2026-04-02-test3-720/right.mp4", camPos=names[2])
     roi = [(0,449), (0,639), (640,1279)]
     controller = CarController()
-
-    leftA = (0,4)
-    leftB = (764,720)
-
-    rightA = (560,720)
-    rightB = (1280,200)
+    wL = 1.0
+    wR = 0.85
 
     threadL = LineThread(camL, controller, (roi[0],roi[1]))
     threadR = LineThread(camR, controller, (roi[0],roi[2]))
@@ -71,13 +47,7 @@ if __name__ == "__main__":
         rightHit = threadR.latestIntersection
 
         if leftHit is not None and rightHit is not None:
-            leftPos = lineProgress(leftA,leftB, leftHit)
-            rightPos = lineProgress(rightA, rightB, rightHit)
-
-            wL = 1.0
-            wR = 0.85
-
-            laneCenter = (wL * leftPos + wR * rightPos) / (wL + wR)
+            laneCenter = (wL * leftHit + wR * rightHit) / (wL + wR)
 
             laneCenter = 0.7 * prevCenter + 0.3 * laneCenter
             prevCenter = laneCenter
