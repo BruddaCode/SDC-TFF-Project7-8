@@ -3,16 +3,16 @@ import time
 from line_detection.LineDetector import LineDetector
 
 class LineThread(threading.Thread):
-    def __init__(self, cam, controller, roi):
+    def __init__(self, cam, roi, A, B):
         threading.Thread.__init__(self)
         self.cam = cam
         self.detector = LineDetector()
-        self.controller = controller
         self.latestFrame = None
         self.running = True
         self.roi = roi
-        self.steerRoi = (roi[0][1]*0.4, roi[0][1]*0.9)
         self.latestIntersection = None
+        self.A = self.toRoi(A, self.roi)
+        self.B = self.toRoi(B, self.roi)
 
     def stop(self):
         self.running = False
@@ -26,17 +26,20 @@ class LineThread(threading.Thread):
             # self.controller.steer(-percentage)
             print(f"steering left with percentage {percentage}")
 
+    def toRoi(self, point, roi):
+        y0, _ = roi[0]
+        x0, _ = roi[1]
+
+        x, y = point
+        return (x - x0, y - y0)
 
     def run(self):
         while self.running:
-            if self.controller is not None:
-                self.controller.drive(40)
             frame = self.cam.getFrame()[self.roi[0][0]:self.roi[0][1], self.roi[1][0]:self.roi[1][1]]
             pos = self.cam.camPos
-            intersection, frame = self.detector.getIntersection(frame, pos)
+            intersection, frame = self.detector.getIntersection(frame, pos, self.A, self.B)
             self.latestFrame = frame
             self.latestIntersection = intersection
                 
             time.sleep(1/30)
         self.cam.release()
-        self.controller.turnOffBus()

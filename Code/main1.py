@@ -5,7 +5,6 @@ from line_detection.PIDController import PIDController
 
 from cv2_enumerate_cameras import enumerate_cameras
 import cv2
-import json
 import time
 
 def getCameraId(cameraName):
@@ -29,13 +28,19 @@ if __name__ == "__main__":
     camL = StereoCamera(videoPath="2026-04-02-test3-720/left.mp4", camPos=names[0])
     camR = StereoCamera(videoPath="2026-04-02-test3-720/right.mp4", camPos=names[2])
     roi = [(0,449), (0,639), (640,1279)]
+
+    leftA = (0,4)
+    leftB = (764,720)
+
+    rightA = (560,720)
+    rightB = (1280,200)
     # controller = CarController()
     controller = None
     wL = 1.0
     wR = 0.85
 
-    threadL = LineThread(camL, controller, (roi[0],roi[1]))
-    threadR = LineThread(camR, controller, (roi[0],roi[2]))
+    threadL = LineThread(camL, (roi[0],roi[1]), leftA, leftB)
+    threadR = LineThread(camR, (roi[0],roi[2]), rightA, rightB)
     threadL.start()
     threadR.start()
 
@@ -80,3 +85,4 @@ if __name__ == "__main__":
             break
 
     cv2.destroyAllWindows()
+    controller.turnOffBus()

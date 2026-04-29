@@ -60,18 +60,10 @@ class LineDetector():
         # cv2.imshow("zwartwit", dst)
         return dst
     
-    def getIntersection(self, frame, pos):
+    def getIntersection(self, frame, pos, bumperA, bumperB):
         intersections = []
         lines = cv2.HoughLinesP(self.processFrame(frame), 1, np.pi/180, 120, minLineLength=120, maxLineGap=50)
         height, width, _ = frame.shape
-        vertical_line = 225
-
-        if pos == "left":
-            bumperA = (0,0)
-            bumperB = (width,height)
-        if pos == "right":
-            bumperA = (0,height)
-            bumperB = (width,0)
 
         if lines is not None:
             for line in lines:  
