@@ -6,6 +6,7 @@ from line_detection.PIDController import PIDController
 from cv2_enumerate_cameras import enumerate_cameras
 import cv2
 import json
+import time
 
 def getCameraId(cameraName):
     cameraIDs = []
@@ -28,7 +29,8 @@ if __name__ == "__main__":
     camL = StereoCamera(videoPath="2026-04-02-test3-720/left.mp4", camPos=names[0])
     camR = StereoCamera(videoPath="2026-04-02-test3-720/right.mp4", camPos=names[2])
     roi = [(0,449), (0,639), (640,1279)]
-    controller = CarController()
+    # controller = CarController()
+    controller = None
     wL = 1.0
     wR = 0.85
 
@@ -37,12 +39,14 @@ if __name__ == "__main__":
     threadL.start()
     threadR.start()
 
-    pid = PIDController(0.35, 0.0, 0.08)
+    targetCenter = 0.5
+    pid = PIDController(0.35, 0.0, 0.08, targetCenter)
 
     prevCenter = 0.5
+    prevTime = time.time()
     
     while True:
-        controller.drive(40)
+        # controller.drive(40)
         leftHit = threadL.latestIntersection
         rightHit = threadR.latestIntersection
 
@@ -51,15 +55,18 @@ if __name__ == "__main__":
 
             laneCenter = 0.7 * prevCenter + 0.3 * laneCenter
             prevCenter = laneCenter
-
-            targetCenter = 0.5
+      
             error = targetCenter - laneCenter
 
-            steer = pid.compute(error)
+            currTime = time.time()
+            dt = currTime - prevTime
+            prevTime = currTime
+
+            steer = pid.compute(error, dt)
 
             steer = max(-100, min(100, steer))
 
-            controller.steer(steer)
+            # controller.steer(steer)
         
         if threadL.latestFrame is not None:
             cv2.imshow("left", threadL.latestFrame)

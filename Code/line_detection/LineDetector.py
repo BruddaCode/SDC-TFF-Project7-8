@@ -9,14 +9,14 @@ class LineDetector():
         pass
     
     def intersect(self, A, B, C, D):
-        x1, y1 = A
-        x2, y2 = B
-        x3, y3 = C
-        x4, y4 = D
+        x1, y1 = map(float, A)
+        x2, y2 = map(float, B)
+        x3, y3 = map(float, C)
+        x4, y4 = map(float, D)
 
-        denom = (x1,x2)*(y3,y4) - (y1,y2)*(x3,x4)
+        denom = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4)
 
-        if denom == 0:
+        if abs(denom) < 1e-6:
             return None
         
         px = ((x1*x2 - y1*y2)*(x3-x4) - (x1*x2)*(x3*y4 - y3*x4)) / denom
@@ -24,7 +24,7 @@ class LineDetector():
 
         return (int(px), int(py))
     
-    def lineProgress(A, B, P):
+    def lineProgress(self, A, B, P):
         ax, ay = A
         bx, by = B
         px, py = P
@@ -70,7 +70,7 @@ class LineDetector():
             bumperA = (0,0)
             bumperB = (width,height)
         if pos == "right":
-            bumperA = (0, height)
+            bumperA = (0,height)
             bumperB = (width,0)
 
         if lines is not None:
@@ -78,18 +78,16 @@ class LineDetector():
                 x1,y1,x2,y2 = line[0]  
                 intersection = self.intersect((x1,y1), (x2,y2), bumperA, bumperB)
                 if intersection is not None:   
+                    # print(intersection)
                     intersection = self.lineProgress(bumperA, bumperB, intersection)
                     intersections.append(intersection)
 
         cv2.line(frame, bumperA, bumperB, (255,255,0), 2)
         # vertical line representing the bounds of detection
-        cv2.line(frame,(0,vertical_line),(width,vertical_line),(100,10,200),2)   
         
         if intersections is not None and len(intersections) >= 2:
-            lowest_intersection = max(intersections, key=lambda p: p[1])
-            cv2.circle(frame, lowest_intersection, 10, (255,0,0), -1)
+            lowest_intersection = max(intersections,)
             return (lowest_intersection, frame)
         elif len(intersections) != 0:
-            cv2.circle(frame, intersections[0], 10, (255,0,0), -1)
             return (intersections[0], frame)
         return (None, frame)
