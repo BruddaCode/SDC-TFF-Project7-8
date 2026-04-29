@@ -1,5 +1,5 @@
-import can
 import struct
+import can
 
 """
 This module handles the control of the car(kart) by sending messages to the bus.
@@ -31,7 +31,6 @@ class CarController:
             raise ValueError("Angle must be between -100 and 100")
         
         angleBytes = struct.pack('<f', angle/100*1.25)
-        # print(angle)
 
         message = can.Message(
             arbitration_id=0x220,

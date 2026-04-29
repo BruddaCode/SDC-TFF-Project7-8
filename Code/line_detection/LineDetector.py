@@ -1,12 +1,16 @@
-import cv2
 import numpy as np
 import json
+import cv2
+import os
 
 class LineDetector():
     def __init__(self):
-        # with open('config.json', 'r') as file:
-        #     self.config = json.load(file)
-        pass
+        with open(os.path.join(os.path.dirname(__file__), '..', 'config.json'), 'r') as file:
+            self.config = json.load(file)
+        self.gaussianKey = self.config["FilterSettings"]["GaussianBlur"]
+        self.thresholdKey = self.config["FilterSettings"]["Threshold"]
+        self.houghKey = self.config["FilterSettings"]["HoughLines"]
+        
     
     def intersect(self, A, B, C, D):
         x1, y1 = map(float, A)
@@ -45,25 +49,27 @@ class LineDetector():
 
     def processFrame(self, frame):
         # apply gaussian blur for less noise on the frame
-        filteredFrame = cv2.GaussianBlur(frame, (9, 9), 1.4)
+        filteredFrame = cv2.GaussianBlur(frame, (self.gaussianKey["KernelSize"], self.gaussianKey["KernelSize"]), self.gaussianKey["SigmaX"])
 
         # Turn the frame gray
         filteredFrame = cv2.cvtColor(filteredFrame, cv2.COLOR_BGR2GRAY)
 
         # filter between dark and light and make dark black and light white
-        _, filteredFrame = cv2.threshold(filteredFrame, 200, 255, cv2.THRESH_BINARY)
+        _, filteredFrame = cv2.threshold(filteredFrame, self.thresholdKey["threshold"], self.thresholdKey["maxValue"], cv2.THRESH_BINARY)
 
         kernel = np.array([[10,5,10],
                            [5,10,5],
                            [10,5,10]])
         dst = cv2.filter2D(filteredFrame, -1, kernel)
+        
         # cv2.imshow("zwartwit", dst)
+        
         return dst
     
-    def getIntersection(self, frame, pos, bumperA, bumperB):
+    def getIntersection(self, frame, bumperA, bumperB):
         intersections = []
-        lines = cv2.HoughLinesP(self.processFrame(frame), 1, np.pi/180, 120, minLineLength=120, maxLineGap=50)
-        height, width, _ = frame.shape
+        lines = cv2.HoughLinesP(self.processFrame(frame), self.houghKey["rho"], np.pi/self.houghKey["theta"], self.houghKey["threshold"], minLineLength=self.houghKey["minLineLength"], maxLineGap=self.houghKey["maxLineGap"])
+        # height, width, _ = frame.shape
 
         if lines is not None:
             for line in lines:  

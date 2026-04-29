@@ -1,8 +1,15 @@
 import numpy as np
+import json
 import cv2
+import os
 
 class StereoCamera():
     def __init__(self, index = None, videoPath = None, camPos = None):
+        with open(os.path.join(os.path.dirname(__file__), '..', 'config.json'), 'r') as file:
+            self.config = json.load(file)
+            
+        self.cameraKey = self.config["Camera"]
+        
         # camPos is used to identify which camera is being used
         self.camPos = camPos
         # check if a video path is provided, if so, use the video instead of the camera
@@ -14,11 +21,11 @@ class StereoCamera():
             if not self.cam.isOpened():
                 print(f"Camera {index} failed to open")
                 return None
-            self.cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-            self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+            self.cam.set(cv2.CAP_PROP_FRAME_WIDTH, self.cameraKey["width"])
+            self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT, self.cameraKey["height"])
             self.cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
-            self.cam.set(cv2.CAP_PROP_FPS, 30)
-            self.cam.set(cv2.CAP_PROP_AUTOFOCUS, 0)
+            self.cam.set(cv2.CAP_PROP_FPS, self.cameraKey["fps"])
+            self.cam.set(cv2.CAP_PROP_AUTOFOCUS, self.cameraKey["autoFocus"])
             print(f"Stereo Camera {index} initialized.")
         
     def getFrame(self):

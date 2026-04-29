@@ -1,11 +1,68 @@
 {
-    "roiHeight":"80,640",
-    "roiWidthLeft":"430,840",
-    "roiWidthRight":"850,440",
-    "blur":"9,9,1.4",
-    "threshold":"200,255",
-    "vector1":"10,5,10",
-    "vector2":"5,10,5",
-    "vector3":"10,5,10",
-    "hough":"120,80,50"
+    "leftRoi": {
+        "x1": 0,
+        "y1": 449,
+        "x2": 0,
+        "y2": 639
+    },
+    "rightRoi": {
+        "x1": 0,
+        "y1": 449,
+        "x2": 640,
+        "y2": 1279
+    },
+    "leftDiagonalLine": {
+        "A": {
+            "x": 0,
+            "y": 4
+        },
+        "B": {
+            "x": 764,
+            "y": 720
+        }
+    },
+    "rightDiagonalLine": {
+        "A": {
+            "x": 560,
+            "y": 720
+        },
+        "B": {
+            "x": 1280,
+            "y": 200
+        }
+    },
+    "LineWeight": {
+        "left": 1.0,
+        "right": 0.85
+    },
+    "PID": {
+        "targetCenter": 0.5,
+        "Kp": 0.35,
+        "Ki": 0.0,
+        "Kd": 0.08
+    },
+    "Camera": {
+        "cameraName": "logitech",
+        "fps": 30,
+        "width": 1280,
+        "height": 720,
+        "autoFocus": 0
+    },
+    "FilterSettings": {
+        "GaussianBlur": {
+            "KernelSize": 9,
+            "SigmaX": 1.4
+        },
+        "Threshold": {
+            "threshold": 200,
+            "maxValue": 255
+        },
+        "HoughLines": {
+            "rho": 1,
+            "theta": 180,
+            "threshold": 50,
+            "minLineLength": 50,
+            "maxLineGap": 10
+        }
+    }
 }

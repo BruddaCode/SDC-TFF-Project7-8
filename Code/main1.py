@@ -1,11 +1,12 @@
+from line_detection.PIDController import PIDController
 from line_detection.StereoCamera import StereoCamera
 from line_detection.LineThread import LineThread
 from rijden.carcontroller import CarController
-from line_detection.PIDController import PIDController
 
 from cv2_enumerate_cameras import enumerate_cameras
-import cv2
 import time
+import json
+import cv2
 
 def getCameraId(cameraName):
     cameraIDs = []
@@ -19,35 +20,35 @@ def getCameraId(cameraName):
         
     return cameraIDs
 
-if __name__ == "__main__": 
-    ids = getCameraId("logitech")
+if __name__ == "__main__":
+    with open("config.json", "r") as f:
+        config = json.load(f)
+    
+    PIDKey = config["PID"]
+    cameraKey = config["Camera"]
+    
+    ids = getCameraId(cameraKey["cameraName"])
     names = ["left", "middle", "right"]
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
     # camL = StereoCamera(index=ids[0], camPos=names[0])
     # camR = StereoCamera(index=ids[2], camPos=names[2])
     camL = StereoCamera(videoPath="2026-04-02-test3-720/left.mp4", camPos=names[0])
     camR = StereoCamera(videoPath="2026-04-02-test3-720/right.mp4", camPos=names[2])
-    roi = [(0,449), (0,639), (640,1279)]
-
-    leftA = (0,4)
-    leftB = (764,720)
-
-    rightA = (560,720)
-    rightB = (1280,200)
+    
     # controller = CarController()
     controller = None
-    wL = 1.0
-    wR = 0.85
+    wL = config["LineWeight"]["left"]
+    wR = config["LineWeight"]["right"]
 
-    threadL = LineThread(camL, (roi[0],roi[1]), leftA, leftB)
-    threadR = LineThread(camR, (roi[0],roi[2]), rightA, rightB)
+    threadL = LineThread(camL)
+    threadR = LineThread(camR)
     threadL.start()
     threadR.start()
+    
+    targetCenter = PIDKey["targetCenter"]
+    pid = PIDController(PIDKey["Kp"], PIDKey["Ki"], PIDKey["Kd"], targetCenter)
 
-    targetCenter = 0.5
-    pid = PIDController(0.35, 0.0, 0.08, targetCenter)
-
-    prevCenter = 0.5
+    prevCenter = targetCenter
     prevTime = time.time()
     
     while True:
@@ -72,6 +73,7 @@ if __name__ == "__main__":
             steer = max(-100, min(100, steer))
 
             # controller.steer(steer)
+            print(f"Steering with value: {steer:.2f} based on lane center: {laneCenter:.2f}")
         
         if threadL.latestFrame is not None:
             cv2.imshow("left", threadL.latestFrame)
@@ -85,4 +87,4 @@ if __name__ == "__main__":
             break
 
     cv2.destroyAllWindows()
-    controller.turnOffBus()
+    # controller.turnOffBus()
