@@ -3,6 +3,7 @@ import threading
 import time
 import json
 import os
+import cv2
 
 class LineThread(threading.Thread):
     def __init__(self, cam):
@@ -38,8 +39,11 @@ class LineThread(threading.Thread):
 
     def run(self):
         while self.running:
-            frame = self.cam.getFrame()[self.roiKey["x1"]:self.roiKey["y1"], self.roiKey["x2"]:self.roiKey["y2"]]
-            intersection, frame = self.detector.getIntersection(frame, self.A, self.B)
+            frame = self.cam.getFrame()
+            roiFrame = frame[self.roiKey["x1"]:self.roiKey["y1"], self.roiKey["x2"]:self.roiKey["y2"]]
+            intersection, roiFrame = self.detector.getIntersection(roiFrame, self.A, self.B)
+            frame[self.roiKey["x1"]:self.roiKey["y1"], self.roiKey["x2"]:self.roiKey["y2"]] = roiFrame
+            cv2.line(frame, (self.lineKey["A"]["x"],self.lineKey["A"]["y"]), (self.lineKey["B"]["x"],self.lineKey["B"]["y"]), (0,0,255), 2)
             self.latestFrame = frame
             self.latestIntersection = intersection
             time.sleep(1/30)

@@ -13,27 +13,27 @@
     },
     "leftDiagonalLine": {
         "A": {
-            "x": 0,
-            "y": 4
+            "x": 135,
+            "y": 0
         },
         "B": {
-            "x": 764,
+            "x": 1130,
             "y": 720
         }
     },
     "rightDiagonalLine": {
         "A": {
-            "x": 560,
+            "x": 165,
             "y": 720
         },
         "B": {
             "x": 1280,
-            "y": 200
+            "y": 35
         }
     },
     "LineWeight": {
-        "left": 1.0,
-        "right": 0.85
+        "left": 0.938540268,
+        "right": 1.0
     },
     "PID": {
         "targetCenter": 0.5,

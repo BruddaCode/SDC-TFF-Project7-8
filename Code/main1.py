@@ -30,13 +30,13 @@ if __name__ == "__main__":
     ids = getCameraId(cameraKey["cameraName"])
     names = ["left", "middle", "right"]
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
-    camL = StereoCamera(index=ids[0], camPos=names[0])
+    camL = StereoCamera(index=ids[1], camPos=names[0])
     camR = StereoCamera(index=ids[2], camPos=names[2])
     # camL = StereoCamera(videoPath="2026-04-02-test3-720/left.mp4", camPos=names[0])
     # camR = StereoCamera(videoPath="2026-04-02-test3-720/right.mp4", camPos=names[2])
     
-    controller = CarController()
-    # controller = None
+    # controller = CarController()
+    controller = None
     wL = config["LineWeight"]["left"]
     wR = config["LineWeight"]["right"]
 
@@ -52,14 +52,14 @@ if __name__ == "__main__":
     prevTime = time.time()
     
     while True:
-        controller.drive(40)
+        # controller.drive(40)
         leftHit = threadL.latestIntersection
         rightHit = threadR.latestIntersection
 
         if leftHit is not None and rightHit is not None:
             laneCenter = (wL * leftHit + wR * rightHit) / (wL + wR)
 
-            laneCenter = 0.7 * prevCenter + 0.3 * laneCenter
+            laneCenter = 0.6 * prevCenter + 0.4 * laneCenter
             prevCenter = laneCenter
       
             error = targetCenter - laneCenter
@@ -72,8 +72,10 @@ if __name__ == "__main__":
 
             steer = max(-100, min(100, steer))
 
-            controller.steer(steer)
-            print(f"Steering with value: {steer:.2f} based on lane center: {laneCenter:.2f}")
+            print(f"de waarde om te sturen is {steer}, links: {leftHit}, rechts: {rightHit}")
+
+            # controller.steer(-steer*100)
+            # print(f"Steering with value: {steer:.2f} based on lane center: {laneCenter:.2f}")
         
         if threadL.latestFrame is not None:
             cv2.imshow("left", threadL.latestFrame)

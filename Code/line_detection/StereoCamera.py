@@ -21,6 +21,8 @@ class StereoCamera():
             if not self.cam.isOpened():
                 print(f"Camera {index} failed to open")
                 return None
+            print(self.cameraKey["width"])
+
             self.cam.set(cv2.CAP_PROP_FRAME_WIDTH, self.cameraKey["width"])
             self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT, self.cameraKey["height"])
             self.cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))

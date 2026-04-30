@@ -45,7 +45,14 @@ class LineDetector():
         
         t = (apx * abx + apy * aby) / denom
 
-        return max(0.0, min(1.0, t))
+        # Soft-map any real value to (0, 1) instead of hard-clipping.
+        softness = 2.0
+        mapped = 0.5 * (np.tanh(softness * (t - 0.5)) + 1.0)
+        lo = np.nextafter(0.0, 1.0)
+        hi = np.nextafter(1.0, 0.0)
+        value = float(np.clip(mapped, lo, hi))
+        value = round(value, 3)
+        return float(np.clip(value, 0.001, 0.999))
 
     def processFrame(self, frame):
         # apply gaussian blur for less noise on the frame
@@ -74,18 +81,20 @@ class LineDetector():
         if lines is not None:
             for line in lines:  
                 x1,y1,x2,y2 = line[0]  
-                intersection = self.intersect((x1,y1), (x2,y2), bumperA, bumperB)
-                if intersection is not None:   
+                intersectionCoord = self.intersect((x1,y1), (x2,y2), bumperA, bumperB)
+                cv2.line(frame, (x1,y1), (x2,y2), (255,0,0), 2)
+                if intersectionCoord is not None:   
                     # print(intersection)
-                    intersection = self.lineProgress(bumperA, bumperB, intersection)
+                    intersection = self.lineProgress(bumperA, bumperB, intersectionCoord)
                     intersections.append(intersection)
 
         cv2.line(frame, bumperA, bumperB, (255,255,0), 2)
         # vertical line representing the bounds of detection
-        
         if intersections is not None and len(intersections) >= 2:
             lowest_intersection = max(intersections,)
+            # cv2.circle(frame, lowest_intersection[1], 2, (0,255,0))
             return (lowest_intersection, frame)
         elif len(intersections) != 0:
+            # cv2.circle(frame, intersections[0][1], 2, (0,255,0))
             return (intersections[0], frame)
         return (None, frame)

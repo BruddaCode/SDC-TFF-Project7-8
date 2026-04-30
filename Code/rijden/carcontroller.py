@@ -29,8 +29,9 @@ class CarController:
     def steer(self, angle: int,):
         if not (-100 <= angle <= 100):
             raise ValueError("Angle must be between -100 and 100")
-        
-        angleBytes = struct.pack('<f', angle/100*1.25)
+        angle = angle/100*1.25
+        print(angle)
+        angleBytes = struct.pack('<f', angle)
 
         message = can.Message(
             arbitration_id=0x220,
