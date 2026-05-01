@@ -11,7 +11,7 @@ class StereoCamera():
         self.cameraKey = self.config["Camera"]
         
         # camPos is used to identify which camera is being used
-        self.camPos = camPos
+        self.camPos = camPos.lower()
         # check if a video path is provided, if so, use the video instead of the camera
         if videoPath is not None:
             self.cam = cv2.VideoCapture(videoPath)

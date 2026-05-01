@@ -30,10 +30,10 @@ if __name__ == "__main__":
     ids = getCameraId(cameraKey["cameraName"])
     names = ["left", "middle", "right"]
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
-    camL = StereoCamera(index=ids[1], camPos=names[0])
-    camR = StereoCamera(index=ids[2], camPos=names[2])
-    # camL = StereoCamera(videoPath="2026-04-02-test3-720/left.mp4", camPos=names[0])
-    # camR = StereoCamera(videoPath="2026-04-02-test3-720/right.mp4", camPos=names[2])
+    # camL = StereoCamera(index=ids[1], camPos=names[0])
+    # camR = StereoCamera(index=ids[2], camPos=names[2])
+    camL = StereoCamera(videoPath="30-04-2026_beelden_Corne/left.mp4", camPos=names[0])
+    camR = StereoCamera(videoPath="30-04-2026_beelden_Corne/right.mp4", camPos=names[2])
     
     # controller = CarController()
     controller = None
@@ -55,7 +55,7 @@ if __name__ == "__main__":
         # controller.drive(40)
         leftHit = threadL.latestIntersection
         rightHit = threadR.latestIntersection
-
+        
         if leftHit is not None and rightHit is not None:
             laneCenter = (wL * leftHit + wR * rightHit) / (wL + wR)
 

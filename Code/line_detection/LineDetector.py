@@ -44,15 +44,18 @@ class LineDetector():
             return 0.5
         
         t = (apx * abx + apy * aby) / denom
+        
+        # print(f"t before mapping: {t}")
 
         # Soft-map any real value to (0, 1) instead of hard-clipping.
-        softness = 2.0
-        mapped = 0.5 * (np.tanh(softness * (t - 0.5)) + 1.0)
-        lo = np.nextafter(0.0, 1.0)
-        hi = np.nextafter(1.0, 0.0)
-        value = float(np.clip(mapped, lo, hi))
-        value = round(value, 3)
-        return float(np.clip(value, 0.001, 0.999))
+        # softness = 2.0
+        # mapped = 0.5 * (np.tanh(softness * (t - 0.5)) + 1.0)
+        # lo = np.nextafter(0.0, 1.0)
+        # hi = np.nextafter(1.0, 0.0)
+        # value = float(np.clip(mapped, lo, hi))
+        # value = round(value, 3)
+        # return float(np.clip(value, 0.001, 0.999))
+        return max(0.0, min(1.0, t))
 
     def processFrame(self, frame):
         # apply gaussian blur for less noise on the frame
@@ -67,11 +70,28 @@ class LineDetector():
         kernel = np.array([[10,5,10],
                            [5,10,5],
                            [10,5,10]])
-        dst = cv2.filter2D(filteredFrame, -1, kernel)
+        frame = cv2.filter2D(filteredFrame, -1, kernel)
         
         # cv2.imshow("zwartwit", dst)
         
-        return dst
+        # hls = cv2.cvtColor(frame, cv2.COLOR_BGR2HLS)
+        # h, l, s = cv2.split(hls)
+        
+        # l = cv2.createCLAHE(clipLimit=2, tileGridSize=(5, 5)).apply(l)
+        
+        # hls = cv2.merge((h, l, s))
+        # frame = cv2.inRange(hls, (0, 180, 0), (255, 255, 180))
+        # frame = cv2.bitwise_and(l, l, mask=frame)
+        
+        # frame = cv2.Canny(frame, 17, 122)
+        
+        # kernel = np.ones(4, np.uint8)
+        # frame = cv2.dilate(frame, kernel, iterations=2)
+        # frame = cv2.erode(frame, kernel, iterations=3)
+        
+        # frame = cv2.filter2D(frame, -1, np.array([[10, 5, 10],[5, 10, 5],[10, 5, 10]]))
+        
+        return frame
     
     def getIntersection(self, frame, bumperA, bumperB):
         intersections = []
@@ -91,8 +111,9 @@ class LineDetector():
         cv2.line(frame, bumperA, bumperB, (255,255,0), 2)
         # vertical line representing the bounds of detection
         if intersections is not None and len(intersections) >= 2:
-            lowest_intersection = max(intersections,)
-            # cv2.circle(frame, lowest_intersection[1], 2, (0,255,0))
+            lowest_intersection = max(intersections)
+            # print(f"Lowest intersection: {lowest_intersection}")
+            # cv2.circle(frame, (100,100), 20, (0,255,0), -1)
             return (lowest_intersection, frame)
         elif len(intersections) != 0:
             # cv2.circle(frame, intersections[0][1], 2, (0,255,0))

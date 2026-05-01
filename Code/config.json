@@ -1,15 +1,23 @@
 {
     "leftRoi": {
-        "x1": 0,
-        "y1": 449,
-        "x2": 0,
-        "y2": 639
+        "x1": 110,
+        "y1": 50,
+        "x2": 260,
+        "y2": 0,
+        "x3": 1040,
+        "y3": 400,
+        "x4": 590,
+        "y4": 560
     },
     "rightRoi": {
-        "x1": 0,
-        "y1": 449,
-        "x2": 640,
-        "y2": 1279
+        "x1": 1270,
+        "y1": 140,
+        "x2": 1130,
+        "y2": 50,
+        "x3": 210,
+        "y3": 490,
+        "x4": 680,
+        "y4": 610
     },
     "leftDiagonalLine": {
         "A": {
@@ -60,9 +68,9 @@
         "HoughLines": {
             "rho": 1,
             "theta": 180,
-            "threshold": 50,
-            "minLineLength": 50,
-            "maxLineGap": 10
+            "threshold": 150,
+            "minLineLength": 80,
+            "maxLineGap": 35
         }
     }
 }

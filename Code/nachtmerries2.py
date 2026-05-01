@@ -3,7 +3,7 @@
 import cv2
 import numpy as np
 
-video_path = "2026-04-02-test3-720/left.mp4"
+video_path = "30-04-2026_beelden_Corne/left.mp4"
 
 cap = cv2.VideoCapture(video_path)
 
@@ -18,11 +18,17 @@ def _noop(_):
 
 trackbars_ready = False
 controls_window = "Controls"
+paused = False
+current_frame = None
 
 while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
+    if not paused:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        current_frame = frame
+    else:
+        frame = current_frame
 
     height, width = frame.shape[:2]
 
@@ -66,11 +72,19 @@ while True:
     overlay = frame.copy()
     overlay[mask == 255] = filtered[mask == 255]
     cv2.polylines(overlay, [roi], isClosed=True, color=(0, 255, 0), thickness=2)
+    cv2.line(overlay, (135, 0), (1130, 720), (255, 0, 0), 2)
+    
+    # Display pause status
+    status_text = "PAUSED" if paused else "PLAYING"
+    cv2.putText(overlay, status_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255 if paused else 0, 255 if paused else 0), 2)
 
     cv2.imshow('Overlay', overlay)
     
-    if cv2.waitKey(30) & 0xFF == ord('q'):
+    key = cv2.waitKey(30) & 0xFF
+    if key == ord('q'):
         break
+    elif key == ord(' '):  # spacebar to toggle pause
+        paused = not paused
 
 
 cap.release()
