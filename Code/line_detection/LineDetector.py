@@ -4,58 +4,43 @@ import cv2
 import os
 
 class LineDetector():
-    def __init__(self):
+    def __init__(self, lengthReferenceLine, bumperA, bumperB, side: bool):
         with open(os.path.join(os.path.dirname(__file__), '..', 'config.json'), 'r') as file:
             self.config = json.load(file)
         self.gaussianKey = self.config["FilterSettings"]["GaussianBlur"]
         self.thresholdKey = self.config["FilterSettings"]["Threshold"]
         self.houghKey = self.config["FilterSettings"]["HoughLines"]
-        
-    
+        self.lengthReferenceLine = lengthReferenceLine
+        self.bumperA = bumperA
+        self.bumperB = bumperB
+
+        # side is true for left and false for right, this is used to determine which side of the line is the "detection" side, and which is the "non-detection" side. This is important for the lineProgress function, as it determines how the progress is calculated based on the position of the intersection relative to the line.
+        self.side = side
+
     def intersect(self, A, B, C, D):
-        x1, y1 = map(float, A)
-        x2, y2 = map(float, B)
-        x3, y3 = map(float, C)
-        x4, y4 = map(float, D)
+        x1, y1 = A
+        x2, y2 = B
+        x3, y3 = C
+        x4, y4 = D
 
         denom = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4)
 
-        if abs(denom) < 1e-6:
+        if abs(denom) == 0:
             return None
         
-        px = ((x1*x2 - y1*y2)*(x3-x4) - (x1*x2)*(x3*y4 - y3*x4)) / denom
-        py = ((x1*x2 - y1*y2)*(y3-y4) - (y1*y2)*(x3*y4 - y3*x4)) / denom
+        px = ((x1*y2 - y1*x2)*(x3-x4) - (x1-x2)*(x3*y4 - y3*x4)) / denom
+        py = ((x1*y2 - y1*x2)*(y3-y4) - (y1-y2)*(x3*y4 - y3*x4)) / denom
 
         return (int(px), int(py))
     
-    def lineProgress(self, A, B, P):
-        ax, ay = A
-        bx, by = B
-        px, py = P
+    def lineProgress(self, intersection):
+        if self.side:
+            length = np.sqrt((self.bumperA[0] - intersection[0])**2 + (self.bumperA[1] - intersection[1])**2)
+            return length / self.lengthReferenceLine
+        else:
+            length = np.sqrt((self.bumperA[0] - intersection[0])**2 + (self.bumperA[1] - intersection[1])**2)
+            return 1 - length / self.lengthReferenceLine
 
-        abx = bx - ax
-        aby = by - ay
-
-        apx = px - ax
-        apy = py - ay
-
-        denom = (abx)*(abx) + (aby)*(aby)
-        if denom == 0:
-            return 0.5
-        
-        t = (apx * abx + apy * aby) / denom
-        
-        # print(f"t before mapping: {t}")
-
-        # Soft-map any real value to (0, 1) instead of hard-clipping.
-        # softness = 2.0
-        # mapped = 0.5 * (np.tanh(softness * (t - 0.5)) + 1.0)
-        # lo = np.nextafter(0.0, 1.0)
-        # hi = np.nextafter(1.0, 0.0)
-        # value = float(np.clip(mapped, lo, hi))
-        # value = round(value, 3)
-        # return float(np.clip(value, 0.001, 0.999))
-        return max(0.0, min(1.0, t))
 
     def processFrame(self, frame):
         # apply gaussian blur for less noise on the frame
@@ -93,29 +78,32 @@ class LineDetector():
         
         return frame
     
-    def getIntersection(self, frame, bumperA, bumperB):
+    def getIntersection(self, frame, pointA, pointB):
+        # collect (progress, (x, y)) pairs for each intersection
         intersections = []
         lines = cv2.HoughLinesP(self.processFrame(frame), self.houghKey["rho"], np.pi/self.houghKey["theta"], self.houghKey["threshold"], minLineLength=self.houghKey["minLineLength"], maxLineGap=self.houghKey["maxLineGap"])
-        # height, width, _ = frame.shape
 
         if lines is not None:
-            for line in lines:  
-                x1,y1,x2,y2 = line[0]  
-                intersectionCoord = self.intersect((x1,y1), (x2,y2), bumperA, bumperB)
-                cv2.line(frame, (x1,y1), (x2,y2), (255,0,0), 2)
-                if intersectionCoord is not None:   
-                    # print(intersection)
-                    intersection = self.lineProgress(bumperA, bumperB, intersectionCoord)
-                    intersections.append(intersection)
+            for line in lines:
+                x1, y1, x2, y2 = line[0]
+                intersectionCoord = self.intersect((x1, y1), (x2, y2), pointA, pointB)
+                cv2.line(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                if intersectionCoord is not None:
+                    ix, iy = int(intersectionCoord[0]), int(intersectionCoord[1])
+                    progress = self.lineProgress(intersectionCoord)
+                    intersections.append((progress, (ix, iy)))
 
-        cv2.line(frame, bumperA, bumperB, (255,255,0), 2)
-        # vertical line representing the bounds of detection
-        if intersections is not None and len(intersections) >= 2:
-            lowest_intersection = max(intersections)
-            # print(f"Lowest intersection: {lowest_intersection}")
-            # cv2.circle(frame, (100,100), 20, (0,255,0), -1)
-            return (lowest_intersection, frame)
-        elif len(intersections) != 0:
-            # cv2.circle(frame, intersections[0][1], 2, (0,255,0))
-            return (intersections[0], frame)
+        cv2.line(frame, pointA, pointB, (255, 255, 0), 2)
+
+        # return the chosen intersection and draw only that one
+        if len(intersections) >= 2:
+            chosen = max(intersections, key=lambda x: x[0])
+            prog, coord = chosen
+            cv2.circle(frame, coord, 6, (0, 255, 0), -1)
+            return (prog, frame)
+        elif len(intersections) == 1:
+            prog, coord = intersections[0]
+            cv2.circle(frame, coord, 6, (0, 255, 0), -1)
+            return (prog, frame)
+
         return (None, frame)

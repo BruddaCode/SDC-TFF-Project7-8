@@ -7,6 +7,7 @@ from cv2_enumerate_cameras import enumerate_cameras
 import time
 import json
 import cv2
+import numpy as np
 
 def getCameraId(cameraName):
     cameraIDs = []
@@ -32,7 +33,7 @@ if __name__ == "__main__":
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
     # camL = StereoCamera(index=ids[1], camPos=names[0])
     # camR = StereoCamera(index=ids[2], camPos=names[2])
-    camL = StereoCamera(videoPath="30-04-2026_beelden_Corne/left.mp4", camPos=names[0])
+    camL = StereoCamera(videoPath="30-04-2026_beelden_Corne/middle.mp4", camPos=names[0])
     camR = StereoCamera(videoPath="30-04-2026_beelden_Corne/right.mp4", camPos=names[2])
     
     # controller = CarController()
@@ -58,23 +59,26 @@ if __name__ == "__main__":
         
         if leftHit is not None and rightHit is not None:
             laneCenter = (wL * leftHit + wR * rightHit) / (wL + wR)
+            # print (f"Left hit: {leftHit:.2f}, Right hit: {rightHit:.2f}, Lane center: {laneCenter:.2f}")
 
             laneCenter = 0.6 * prevCenter + 0.4 * laneCenter
             prevCenter = laneCenter
       
-            error = targetCenter - laneCenter
-
             currTime = time.time()
             dt = currTime - prevTime
             prevTime = currTime
 
-            steer = pid.compute(error, dt)
+            # pass the actual process variable (laneCenter) to the PID
+            steer = pid.compute(laneCenter, dt)
 
-            steer = max(-100, min(100, steer))
+            gain = 1000
+            steer = int(np.clip(steer * gain, -100, 100))
 
             print(f"de waarde om te sturen is {steer}, links: {leftHit}, rechts: {rightHit}")
 
-            # controller.steer(-steer*100)
+            # print(f"de waarde om te sturen is {steer}, links: {leftHit}, rechts: {rightHit}")
+
+            # controller.steer(steer*100)
             # print(f"Steering with value: {steer:.2f} based on lane center: {laneCenter:.2f}")
         
         if threadL.latestFrame is not None:

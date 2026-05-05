@@ -19,13 +19,15 @@ class LineThread(threading.Thread):
         
         self.running = True
         
-        self.detector = LineDetector()
         self.latestFrame = None
         self.latestIntersection = None
         self.roi = np.array([[self.roiKey["x1"], self.roiKey["y1"]], [self.roiKey["x2"], self.roiKey["y2"]], [self.roiKey["x3"], self.roiKey["y3"]], [self.roiKey["x4"], self.roiKey["y4"]]], np.int32)
         self.roiBounds = cv2.boundingRect(self.roi)
         self.A, self.B = self.getRoiLinePoints((self.lineKey["A"]["x"], self.lineKey["A"]["y"]), (self.lineKey["B"]["x"], self.lineKey["B"]["y"]))
-        print(f"LineThread for {self.cam.camPos} initialized with ROI bounds: {self.roiBounds} and line points A: {self.A}, B: {self.B}")
+        if self.cam.camPos == "left":
+            self.detector = LineDetector(np.sqrt((self.lineKey["B"]["x"] - self.lineKey["A"]["x"])**2 + (self.lineKey["B"]["y"] - self.lineKey["A"]["y"])**2), (self.lineKey["A"]["x"], self.lineKey["A"]["y"]), (self.lineKey["B"]["x"], self.lineKey["B"]["y"]), True)
+        else:
+            self.detector = LineDetector(np.sqrt((self.lineKey["B"]["x"] - self.lineKey["A"]["x"])**2 + (self.lineKey["B"]["y"] - self.lineKey["A"]["y"])**2), (self.lineKey["A"]["x"], self.lineKey["A"]["y"]), (self.lineKey["B"]["x"], self.lineKey["B"]["y"]), False)
 
     # dont try to simplify this, it just breaks somehow, and i have no idea why
     def toRoi(self, point, roi):
@@ -117,6 +119,7 @@ class LineThread(threading.Thread):
 
             # get the intersection of the line with the roi, and also get the processed roi frame for later use
             intersection, roiFrame = self.detector.getIntersection(roiFrame, self.A, self.B)
+            # print(f"{self.cam.camPos} intersection: {intersection}")
             
             # create a display frame that only shows the roi, and also draw the line and the intersection on it, and then put it back on the original frame
             displayRoiFrame = originalRoiFrame.copy()
