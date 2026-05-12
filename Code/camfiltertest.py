@@ -1,9 +1,20 @@
 import cv2
 import numpy as np
 import time
+import json
+import os
 
-camL = cv2.VideoCapture("2026-04-02-test3-720/left.mp4")
-camR = cv2.VideoCapture("2026-04-02-test3-720/right.mp4")
+# SOURCE_FOLDER = "30-04-2026_beelden_Corne"
+SOURCE_FOLDER = "30-04-2026_verlichte_baan"
+# SOURCE_FOLDER = "2026-04-02-test3-720"
+
+SOURCE_L = f"{SOURCE_FOLDER}/left.mp4"
+SOURCE_R = f"{SOURCE_FOLDER}/right.mp4"
+
+
+
+camL = cv2.VideoCapture(SOURCE_L)
+camR = cv2.VideoCapture(SOURCE_R)
 
 # =========================
 # PARAMETER EXPLANATION (provided by ChatGPT)
@@ -129,6 +140,10 @@ enable_canny = 0
 enable_morph = 0
 enable_threshold = 0
 enable_adaptive_threshold = 0
+enable_sobel = 0
+# Sobel parameters
+sobel_ksize = 5  # Kernel size for Sobel (must be odd: 1, 3, 5, 7...)
+sobel_threshold = 100  # Threshold for Sobel output
 roi_timing_total_ms = 0.0
 roi_timing_call_count = 0
 roi_timing_avg_ms = 0.0
@@ -136,6 +151,40 @@ roi_timing_avg_ms = 0.0
 
 def noop(_):
     pass
+
+
+def is_video_file_source(source):
+    return isinstance(source, str)
+
+
+def read_synced_frames(left_capture, right_capture, sync_enabled):
+    ret_left, frame_left = left_capture.read()
+    ret_right, frame_right = right_capture.read()
+
+    if not ret_left or not ret_right:
+        return ret_left, frame_left, ret_right, frame_right
+
+    if not sync_enabled:
+        return ret_left, frame_left, ret_right, frame_right
+
+    left_idx = int(left_capture.get(cv2.CAP_PROP_POS_FRAMES))
+    right_idx = int(right_capture.get(cv2.CAP_PROP_POS_FRAMES))
+
+    # Keep both file streams within 1 frame of each other.
+    if left_idx > right_idx + 1:
+        while left_idx > right_idx + 1:
+            ret_right, frame_right = right_capture.read()
+            if not ret_right:
+                break
+            right_idx = int(right_capture.get(cv2.CAP_PROP_POS_FRAMES))
+    elif right_idx > left_idx + 1:
+        while right_idx > left_idx + 1:
+            ret_left, frame_left = left_capture.read()
+            if not ret_left:
+                break
+            left_idx = int(left_capture.get(cv2.CAP_PROP_POS_FRAMES))
+
+    return ret_left, frame_left, ret_right, frame_right
 
 def ensure_odd(value):
     # Gaussian kernel size must be odd and at least 1.
@@ -189,6 +238,14 @@ def filter_frame(frame):
     # canny edge detection to find edges in the frame
     if enable_canny:
         frame = cv2.Canny(frame, canny_threshold1, canny_threshold2)
+
+    # sobel edge detection
+    if enable_sobel:
+        sobelx = cv2.Sobel(frame, cv2.CV_64F, 1, 0, ksize=sobel_ksize)
+        sobely = cv2.Sobel(frame, cv2.CV_64F, 0, 1, ksize=sobel_ksize)
+        sobelxy = np.sqrt(sobelx**2 + sobely**2)
+        sobelxy = (sobelxy / sobelxy.max() * 255).astype(np.uint8)
+        _, frame = cv2.threshold(sobelxy, sobel_threshold, 255, cv2.THRESH_BINARY)
 
     if enable_morph:
         kernel = np.ones(canny_kernel, np.uint8)
@@ -271,6 +328,63 @@ def apply_intersection_on_roi(main_frame, roi_rect, line_x):
         roi_timing_call_count += 1
         roi_timing_avg_ms = roi_timing_total_ms / roi_timing_call_count
 
+# Load saved parameters on startup BEFORE creating trackbars
+def load_parameters(filename="parameters.json"):
+    """Load trackbar parameters from a JSON file."""
+    global enable_clahe, clipLimit, tileGridSize, hls_lower_bound, hls_upper_bound
+    global enable_blur, blur, sigma, enable_canny, canny_threshold1, canny_threshold2
+    global enable_morph, canny_kernel, canny_dilation_iterations, canny_erosion_iterations
+    global enable_adaptive_threshold, adaptive_threshold, adaptive_range, adaptive_constant
+    global enable_threshold, contrast_thresholds, hough_threshold, minLineLength, maxLineGap
+    global hough_pi, vertical_line_x, horizontal_line_y, roi
+    global enable_sobel, sobel_ksize, sobel_threshold
+    
+    if not os.path.exists(filename):
+        print(f"No saved parameters found. Using defaults.")
+        return
+    
+    try:
+        with open(filename, 'r') as f:
+            params = json.load(f)
+        
+        enable_clahe = params.get("enable_clahe", enable_clahe)
+        clipLimit = params.get("clipLimit", clipLimit)
+        tileGridSize = tuple(params.get("tileGridSize", tileGridSize))
+        hls_lower_bound = tuple(params.get("hls_lower_bound", hls_lower_bound))
+        hls_upper_bound = tuple(params.get("hls_upper_bound", hls_upper_bound))
+        enable_blur = params.get("enable_blur", enable_blur)
+        blur = tuple(params.get("blur", blur))
+        sigma = params.get("sigma", sigma)
+        enable_canny = params.get("enable_canny", enable_canny)
+        canny_threshold1 = params.get("canny_threshold1", canny_threshold1)
+        canny_threshold2 = params.get("canny_threshold2", canny_threshold2)
+        enable_morph = params.get("enable_morph", enable_morph)
+        canny_kernel = tuple(params.get("canny_kernel", canny_kernel))
+        canny_dilation_iterations = params.get("canny_dilation_iterations", canny_dilation_iterations)
+        canny_erosion_iterations = params.get("canny_erosion_iterations", canny_erosion_iterations)
+        enable_adaptive_threshold = params.get("enable_adaptive_threshold", enable_adaptive_threshold)
+        adaptive_threshold = params.get("adaptive_threshold", adaptive_threshold)
+        adaptive_range = params.get("adaptive_range", adaptive_range)
+        adaptive_constant = params.get("adaptive_constant", adaptive_constant)
+        enable_threshold = params.get("enable_threshold", enable_threshold)
+        contrast_thresholds = tuple(params.get("contrast_thresholds", contrast_thresholds))
+        hough_threshold = params.get("hough_threshold", hough_threshold)
+        minLineLength = params.get("minLineLength", minLineLength)
+        maxLineGap = params.get("maxLineGap", maxLineGap)
+        hough_pi = params.get("hough_pi", hough_pi)
+        vertical_line_x = params.get("vertical_line_x", vertical_line_x)
+        horizontal_line_y = params.get("horizontal_line_y", horizontal_line_y)
+        roi = tuple(params.get("roi", roi))
+        enable_sobel = params.get("enable_sobel", enable_sobel)
+        sobel_ksize = params.get("sobel_ksize", sobel_ksize)
+        sobel_threshold = params.get("sobel_threshold", sobel_threshold)
+        
+        print(f"Parameters loaded from {filename}")
+    except Exception as e:
+        print(f"Error loading parameters: {e}")
+
+load_parameters()
+
 cv2.namedWindow("Controls", cv2.WINDOW_NORMAL)
 cv2.resizeWindow("Controls", 520, 780)
 
@@ -291,6 +405,10 @@ cv2.createTrackbar("Sigma", "Controls", sigma, 100, noop)
 cv2.createTrackbar("Enable Canny", "Controls", enable_canny, 1, noop)
 cv2.createTrackbar("Canny threshold1", "Controls", canny_threshold1, 255, noop)
 cv2.createTrackbar("Canny threshold2", "Controls", canny_threshold2, 255, noop)
+
+cv2.createTrackbar("Enable Sobel", "Controls", enable_sobel, 1, noop)
+cv2.createTrackbar("Sobel ksize", "Controls", sobel_ksize, 10, noop)
+cv2.createTrackbar("Sobel threshold", "Controls", sobel_threshold, 255, noop)
 
 cv2.createTrackbar("Enable Morph", "Controls", enable_morph, 1, noop)
 cv2.createTrackbar("Canny kernel", "Controls", canny_kernel[0], 10, noop)
@@ -318,9 +436,49 @@ cv2.createTrackbar("ROI width", "Controls", roi[2], 1280, noop)
 
 cv2.namedWindow("Camera Dashboard", cv2.WINDOW_NORMAL)
 
+def save_parameters(filename="parameters.json"):
+    """Save all trackbar parameters to a JSON file."""
+    params = {
+        "enable_clahe": enable_clahe,
+        "clipLimit": clipLimit,
+        "tileGridSize": tileGridSize,
+        "hls_lower_bound": hls_lower_bound,
+        "hls_upper_bound": hls_upper_bound,
+        "enable_blur": enable_blur,
+        "blur": blur,
+        "sigma": sigma,
+        "enable_canny": enable_canny,
+        "canny_threshold1": canny_threshold1,
+        "canny_threshold2": canny_threshold2,
+        "enable_morph": enable_morph,
+        "canny_kernel": canny_kernel,
+        "canny_dilation_iterations": canny_dilation_iterations,
+        "canny_erosion_iterations": canny_erosion_iterations,
+        "enable_adaptive_threshold": enable_adaptive_threshold,
+        "adaptive_threshold": adaptive_threshold,
+        "adaptive_range": adaptive_range,
+        "adaptive_constant": adaptive_constant,
+        "enable_threshold": enable_threshold,
+        "contrast_thresholds": contrast_thresholds,
+        "enable_sobel": enable_sobel,
+        "sobel_ksize": sobel_ksize,
+        "sobel_threshold": sobel_threshold,
+        "hough_threshold": hough_threshold,
+        "minLineLength": minLineLength,
+        "maxLineGap": maxLineGap,
+        "hough_pi": hough_pi,
+        "vertical_line_x": vertical_line_x,
+        "horizontal_line_y": horizontal_line_y,
+        "roi": roi
+    }
+    with open(filename, 'w') as f:
+        json.dump(params, f, indent=2)
+    print(f"Parameters saved to {filename}")
+
+sync_file_inputs = is_video_file_source(SOURCE_L) and is_video_file_source(SOURCE_R)
+
 while True:
-    retL, frameL = camL.read()
-    retR, frameR = camR.read()
+    retL, frameL, retR, frameR = read_synced_frames(camL, camR, sync_file_inputs)
 
     if not retL or not retR:
         break
@@ -341,6 +499,9 @@ while True:
     tileGridSize = (tile_grid, tile_grid)
     canny_threshold1 = cv2.getTrackbarPos("Canny threshold1", "Controls")
     canny_threshold2 = cv2.getTrackbarPos("Canny threshold2", "Controls")
+    enable_sobel = cv2.getTrackbarPos("Enable Sobel", "Controls")
+    sobel_ksize = ensure_odd(cv2.getTrackbarPos("Sobel ksize", "Controls"))
+    sobel_threshold = cv2.getTrackbarPos("Sobel threshold", "Controls")
     hough_threshold = cv2.getTrackbarPos("Hough threshold", "Controls")
     minLineLength = cv2.getTrackbarPos("Min line length", "Controls")
     maxLineGap = cv2.getTrackbarPos("Max line gap", "Controls")
@@ -355,6 +516,7 @@ while True:
     enable_clahe = cv2.getTrackbarPos("Enable CLAHE", "Controls")
     enable_blur = cv2.getTrackbarPos("Enable Blur", "Controls")
     enable_canny = cv2.getTrackbarPos("Enable Canny", "Controls")
+    enable_sobel = cv2.getTrackbarPos("Enable Sobel", "Controls")
     enable_morph = cv2.getTrackbarPos("Enable Morph", "Controls")
     enable_threshold = cv2.getTrackbarPos("Enable Threshold", "Controls")
     enable_adaptive_threshold = cv2.getTrackbarPos("Enable Adaptive Threshold", "Controls")
@@ -395,9 +557,12 @@ while True:
     cv2.resizeWindow("Camera Dashboard", target_width, target_height)
     cv2.imshow("Camera Dashboard", dashboard)
 
-    if cv2.waitKey(30) & 0xFF == ord('q'):
+    key = cv2.waitKey(30) & 0xFF
+    if key == ord('q'):
         break
-    
+
+    if key == ord('s'):
+        save_parameters()
 
 camL.release()
 camR.release()
