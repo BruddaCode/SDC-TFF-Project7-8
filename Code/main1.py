@@ -31,13 +31,13 @@ if __name__ == "__main__":
     ids = getCameraId(cameraKey["cameraName"])
     names = ["left", "middle", "right"]
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
-    camL = StereoCamera(index=ids[1], camPos=names[0])
-    camR = StereoCamera(index=ids[2], camPos=names[2])
-    # camL = StereoCamera(videoPath="30-04-2026_beelden_Corne/middle.mp4", camPos=names[0])
-    # camR = StereoCamera(videoPath="30-04-2026_beelden_Corne/right.mp4", camPos=names[2])
+    # camL = StereoCamera(index=ids[1], camPos=names[0])
+    # camR = StereoCamera(index=ids[2], camPos=names[2])
+    camL = StereoCamera(videoPath="30-04-2026_beelden_Corne/left.mp4", camPos=names[0])
+    camR = StereoCamera(videoPath="30-04-2026_beelden_Corne/right.mp4", camPos=names[2])
     
-    controller = CarController()
-    # controller = None
+    # controller = CarController()
+    controller = None
     wL = config["LineWeight"]["left"]
     wR = config["LineWeight"]["right"]
 
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     prevTime = time.time()
     
     while True:
-        controller.drive(40)
+        # controller.drive(40)
         leftHit = threadL.latestIntersection
         rightHit = threadR.latestIntersection
         
@@ -74,11 +74,11 @@ if __name__ == "__main__":
 
             # map steer from [0.0, 1.5] to [-100, 100]
             steer = int(np.clip(np.interp(steer, [-0.03, 0.06], [-100, 100]), -100, 100))
-            print(f"de waarde om te sturen is {steer}, links: {leftHit}, rechts: {rightHit}")
+            print(f"de waarde om te sturen is {steer}, links: {leftHit}, rechts: {rightHit}, bericht:{steer/100*1.25}")
 
             # print(f"de waarde om te sturen is {steer}, links: {leftHit}, rechts: {rightHit}")
-
-            controller.steer(-steer)
+            
+            # controller.steer(-steer)
             # print(f"Steering with value: {steer:.2f} based on lane center: {laneCenter:.2f}")
         
         if threadL.latestFrame is not None:
