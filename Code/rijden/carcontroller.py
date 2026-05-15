@@ -10,7 +10,7 @@ main.py will use this to control the car's movement, steering, and braking.
 class CarController:
     def __init__(self):
         self.bus = can.Bus(interface='socketcan', channel='can0', bitrate=500000)
-        self.canMessageSpeed = 0.009
+        self.canMessageSpeed = 0.04
 
     def drive(self, speed: int):
         if not (0 <= speed <= 255):
