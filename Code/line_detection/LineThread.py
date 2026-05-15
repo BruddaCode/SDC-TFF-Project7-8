@@ -19,6 +19,14 @@ class LineThread(threading.Thread):
         
         self.running = True
         
+        # synchronization primitives for coordinated frame reads
+        self._cond = threading.Condition()
+        self.latestIndex = 0
+
+        # when True, the thread will wait for a step request from the controller
+        self.sync_mode = False
+        self._step_requested = False
+        
         self.latestFrame = None
         self.latestIntersection = None
         self.roi = np.array([[self.roiKey["x1"], self.roiKey["y1"]], [self.roiKey["x2"], self.roiKey["y2"]], [self.roiKey["x3"], self.roiKey["y3"]], [self.roiKey["x4"], self.roiKey["y4"]]], np.int32)
@@ -111,10 +119,54 @@ class LineThread(threading.Thread):
         return roiFrame, maskedRoiFrame, mask, (x, y, w, h)
 
     def stop(self):
-        self.running = False
+        # stop thread and notify any waiters and step requests
+        with self._cond:
+            self.running = False
+            self._step_requested = True
+            self._cond.notify_all()
+
+    def enable_sync_mode(self, enable=True):
+        """Enable or disable step-based synchronous processing."""
+        with self._cond:
+            self.sync_mode = bool(enable)
+            # wake thread so it can notice mode change
+            self._cond.notify_all()
+
+    def request_step(self):
+        """Request the thread to process exactly one frame (only in sync_mode)."""
+        with self._cond:
+            if not self.running:
+                return
+            self._step_requested = True
+            self._cond.notify_all()
+
+    def wait_for_index(self, prev_index, timeout=None):
+        """Block until the internal frame index advances past prev_index or timeout.
+        Returns the new latestIndex (may be unchanged on timeout/stop).
+        """
+        with self._cond:
+            end = None
+            if timeout is not None:
+                end = time.time() + timeout
+            while self.latestIndex == prev_index and self.running:
+                remaining = end - time.time() if end is not None else None
+                if remaining is not None and remaining <= 0:
+                    break
+                self._cond.wait(timeout=remaining)
+            return self.latestIndex
 
     def run(self):
         while self.running:
+            # if in sync mode, wait until a step is requested
+            if self.sync_mode:
+                with self._cond:
+                    while not self._step_requested and self.running:
+                        self._cond.wait()
+                    if not self.running:
+                        break
+                    # consume the step request and proceed
+                    self._step_requested = False
+                    
             frame = self.cam.getFrame()
             # mask the frame to only include the roi, and also get the original roi frame for later use
             originalRoiFrame, roiFrame, mask, (x, y, w, h) = self.applyRoi(frame)
@@ -133,7 +185,14 @@ class LineThread(threading.Thread):
             
             # draw the detection line, red
             cv2.line(frame, (self.lineKey["A"]["x"],self.lineKey["A"]["y"]), (self.lineKey["B"]["x"],self.lineKey["B"]["y"]), (0,0,255), 2)
-                        
+        
+            # update latest data and notify any waiters
+            with self._cond:
+                self.latestFrame = frame
+                self.latestIntersection = intersection
+                self.latestIndex += 1
+                self._cond.notify_all()
+           
             self.latestFrame = frame
             self.latestIntersection = intersection
             time.sleep(1/30)

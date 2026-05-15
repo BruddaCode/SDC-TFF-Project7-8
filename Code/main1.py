@@ -2,6 +2,7 @@ from line_detection.PIDController import PIDController
 from line_detection.StereoCamera import StereoCamera
 from line_detection.LineThread import LineThread
 # from rijden.carcontroller import CarController
+
 from cv2_enumerate_cameras import enumerate_cameras
 import time
 import json
@@ -29,22 +30,34 @@ if __name__ == "__main__":
     
     ids = getCameraId(cameraKey["cameraName"])
     names = ["left", "middle", "right"]
-    camL = StereoCamera(videoPath="30-04-2026_beelden_Tom/left.mp4", camPos=names[0])
-    camR = StereoCamera(videoPath="30-04-2026_beelden_Tom/right.mp4", camPos=names[2])
+    # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
+    # camL = StereoCamera(index=ids[1], camPos=names[0])
+    # camR = StereoCamera(index=ids[2], camPos=names[2])
+    camL = StereoCamera(videoPath="2026-04-02-test3-720/left.mp4", camPos=names[0])
+    camR = StereoCamera(videoPath="2026-04-02-test3-720/right.mp4", camPos=names[2])
     
     # controller = CarController()
     controller = None
+    wL = config["LineWeight"]["left"]
+    wR = config["LineWeight"]["right"]
 
     threadL = LineThread(camL)
     threadR = LineThread(camR)
+    # enable synchronous stepping so we can request frames together
+    threadL.enable_sync_mode(True)
+    threadR.enable_sync_mode(True)
     threadL.start()
     threadR.start()
+    # start indices for synchronization: we'll wait for each thread to advance
+    prevLIndex = threadL.latestIndex
+    prevRIndex = threadR.latestIndex
     
     targetCenter = PIDKey["targetCenter"]
     pid = PIDController(PIDKey["Kp"], PIDKey["Ki"], PIDKey["Kd"], targetCenter)
+
     prevCenter = targetCenter
     prevTime = time.time()
-
+    
     # stale value tracking
     MAX_STALE_TIME = 0.5
     lastLeftHit  = None
@@ -53,6 +66,12 @@ if __name__ == "__main__":
     lastRightTime = 0.0
     
     while True:
+        threadL.request_step()
+        threadR.request_step()
+        threadL.wait_for_index(prevLIndex)
+        threadR.wait_for_index(prevRIndex)
+        prevLIndex = threadL.latestIndex
+        prevRIndex = threadR.latestIndex
         # controller.drive(40)
         leftHit  = threadL.latestIntersection
         rightHit = threadR.latestIntersection
@@ -86,7 +105,6 @@ if __name__ == "__main__":
             mode = "lost"
             laneCenter = prevCenter  # hold last known center
 
-        print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f}")
 
         # smooth and compute PID
         laneCenter = 0.6 * prevCenter + 0.4 * laneCenter
@@ -98,11 +116,13 @@ if __name__ == "__main__":
         steer = pid.compute(laneCenter, dt)
         steer = int(np.clip(np.interp(steer, [-0.03, 0.06], [-100, 100]), -100, 100))
 
+        print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
         # controller.steer(-steer)
         # print(f"Steering with value: {steer:.2f} based on lane center: {laneCenter:.2f}")
         
         if threadL.latestFrame is not None:
             cv2.imshow("left", threadL.latestFrame)
+
         if threadR.latestFrame is not None:
             cv2.imshow("right", threadR.latestFrame)
 
@@ -112,4 +132,4 @@ if __name__ == "__main__":
             break
 
     cv2.destroyAllWindows()
-    controller.turnOffBus()
+    # controller.turnOffBus()

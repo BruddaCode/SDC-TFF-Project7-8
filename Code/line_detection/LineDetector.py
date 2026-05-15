@@ -37,7 +37,7 @@ class LineDetector():
     def lineProgress(self, intersection):
         if self.side:
             length = np.sqrt((self.bumperA[0] - intersection[0])**2 + (self.bumperA[1] - intersection[1])**2)
-            print(f"Left side - Length from bumperA to intersection: {length}, Reference line length: {self.lengthReferenceLine}, Progress before inversion: {length / self.lengthReferenceLine}")
+            # print(f"Left side - Length from bumperA to intersection: {length}, Reference line length: {self.lengthReferenceLine}, Progress before inversion: {length / self.lengthReferenceLine}")
             return length / self.lengthReferenceLine
         else:
             length = np.sqrt((self.bumperA[0] - intersection[0])**2 + (self.bumperA[1] - intersection[1])**2)
