@@ -23,13 +23,13 @@ class LineThread(threading.Thread):
         self.latestIntersection = None
         self.roi = np.array([[self.roiKey["x1"], self.roiKey["y1"]], [self.roiKey["x2"], self.roiKey["y2"]], [self.roiKey["x3"], self.roiKey["y3"]], [self.roiKey["x4"], self.roiKey["y4"]]], np.int32)
         self.roiBounds = cv2.boundingRect(self.roi)
-        self.A, self.B = self.getRoiLinePoints((self.lineKey["A"]["x"], self.lineKey["A"]["y"]), (self.lineKey["B"]["x"], self.lineKey["B"]["y"]))
-        # self.A = (self.lineKey["A"]["x"], self.lineKey["A"]["y"])
-        # self.B = (self.lineKey["B"]["x"], self.lineKey["B"]["y"])
+        # self.A, self.B = self.getRoiLinePoints((self.lineKey["A"]["x"], self.lineKey["A"]["y"]), (self.lineKey["B"]["x"], self.lineKey["B"]["y"]))
+        self.A = self.toRoi((self.lineKey["A"]["x"], self.lineKey["A"]["y"]), self.roiBounds)
+        self.B = self.toRoi((self.lineKey["B"]["x"], self.lineKey["B"]["y"]), self.roiBounds)
         if self.cam.camPos == "left":
-            self.detector = LineDetector(np.sqrt((self.lineKey["B"]["x"] - self.lineKey["A"]["x"])**2 + (self.lineKey["B"]["y"] - self.lineKey["A"]["y"])**2), (self.lineKey["A"]["x"], self.lineKey["A"]["y"]), (self.lineKey["B"]["x"], self.lineKey["B"]["y"]), True)
+            self.detector = LineDetector(np.sqrt((self.lineKey["B"]["x"] - self.lineKey["A"]["x"])**2 + (self.lineKey["B"]["y"] - self.lineKey["A"]["y"])**2), self.A, self.B, True)
         else:
-            self.detector = LineDetector(np.sqrt((self.lineKey["B"]["x"] - self.lineKey["A"]["x"])**2 + (self.lineKey["B"]["y"] - self.lineKey["A"]["y"])**2), (self.lineKey["A"]["x"], self.lineKey["A"]["y"]), (self.lineKey["B"]["x"], self.lineKey["B"]["y"]), False)
+            self.detector = LineDetector(np.sqrt((self.lineKey["B"]["x"] - self.lineKey["A"]["x"])**2 + (self.lineKey["B"]["y"] - self.lineKey["A"]["y"])**2), self.A, self.B, False)
 
     # dont try to simplify this, it just breaks somehow, and i have no idea why
     def toRoi(self, point, roi):

@@ -2,7 +2,6 @@ from line_detection.PIDController import PIDController
 from line_detection.StereoCamera import StereoCamera
 from line_detection.LineThread import LineThread
 # from rijden.carcontroller import CarController
-
 from cv2_enumerate_cameras import enumerate_cameras
 import time
 import json
@@ -30,16 +29,11 @@ if __name__ == "__main__":
     
     ids = getCameraId(cameraKey["cameraName"])
     names = ["left", "middle", "right"]
-    # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
-    # camL = StereoCamera(index=ids[1], camPos=names[0])
-    # camR = StereoCamera(index=ids[2], camPos=names[2])
     camL = StereoCamera(videoPath="30-04-2026_beelden_Tom/left.mp4", camPos=names[0])
     camR = StereoCamera(videoPath="30-04-2026_beelden_Tom/right.mp4", camPos=names[2])
     
     # controller = CarController()
     controller = None
-    wL = config["LineWeight"]["left"]
-    wR = config["LineWeight"]["right"]
 
     threadL = LineThread(camL)
     threadR = LineThread(camR)
@@ -48,44 +42,67 @@ if __name__ == "__main__":
     
     targetCenter = PIDKey["targetCenter"]
     pid = PIDController(PIDKey["Kp"], PIDKey["Ki"], PIDKey["Kd"], targetCenter)
-
     prevCenter = targetCenter
     prevTime = time.time()
+
+    # stale value tracking
+    MAX_STALE_TIME = 0.5
+    lastLeftHit  = None
+    lastRightHit = None
+    lastLeftTime  = 0.0
+    lastRightTime = 0.0
     
     while True:
         # controller.drive(40)
-        leftHit = threadL.latestIntersection
+        leftHit  = threadL.latestIntersection
         rightHit = threadR.latestIntersection
-        
-        # print(f"Left hit: {leftHit}, Right hit: {rightHit}")
-        
-        if leftHit is not None and rightHit is not None:
-            laneCenter = (wL * leftHit + wR * rightHit) / (wL + wR)
-            # print (f"Left hit: {leftHit:.2f}, Right hit: {rightHit:.2f}, Lane center: {laneCenter:.2f}")
+        currTime = time.time()
 
-            laneCenter = 0.6 * prevCenter + 0.4 * laneCenter
-            prevCenter = laneCenter
-      
-            currTime = time.time()
-            dt = currTime - prevTime
-            prevTime = currTime
+        # update stored values if we have fresh detections
+        if leftHit is not None:
+            lastLeftHit  = leftHit
+            lastLeftTime = currTime
+        if rightHit is not None:
+            lastRightHit  = rightHit
+            lastRightTime = currTime
 
-            # pass the actual process variable (laneCenter) to the PID
-            steer = pid.compute(laneCenter, dt)
-            # print(f"PID output (steer before mapping): {steer}")
+        # check if stored values are still within the stale timeout
+        leftValid  = lastLeftHit  is not None and (currTime - lastLeftTime)  < MAX_STALE_TIME
+        rightValid = lastRightHit is not None and (currTime - lastRightTime) < MAX_STALE_TIME
 
-            # map steer from [0.0, 1.5] to [-100, 100]
-            steer = int(np.clip(np.interp(steer, [-0.03, 0.06], [-100, 100]), -100, 100))
-            # print(f"de waarde om te sturen is {steer}, links: {leftHit}, rechts: {rightHit}, bericht:{steer/100*1.25}")
+        if leftValid and rightValid:
+            mode = "both"
+            laneCenter = lastLeftHit / (lastLeftHit + lastRightHit)
 
-            # print(f"de waarde om te sturen is {steer}, links: {leftHit}, rechts: {rightHit}")
-            
-            # controller.steer(-steer)
-            # print(f"Steering with value: {steer:.2f} based on lane center: {laneCenter:.2f}")
+        elif leftValid:
+            mode = "single-left"
+            laneCenter = lastLeftHit
+
+        elif rightValid:
+            mode = "single-right"
+            laneCenter = 1 - lastRightHit
+
+        else:
+            mode = "lost"
+            laneCenter = prevCenter  # hold last known center
+
+        print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f}")
+
+        # smooth and compute PID
+        laneCenter = 0.6 * prevCenter + 0.4 * laneCenter
+        prevCenter = laneCenter
+
+        dt = currTime - prevTime
+        prevTime = currTime
+
+        steer = pid.compute(laneCenter, dt)
+        steer = int(np.clip(np.interp(steer, [-0.03, 0.06], [-100, 100]), -100, 100))
+
+        # controller.steer(-steer)
+        # print(f"Steering with value: {steer:.2f} based on lane center: {laneCenter:.2f}")
         
         if threadL.latestFrame is not None:
             cv2.imshow("left", threadL.latestFrame)
-        
         if threadR.latestFrame is not None:
             cv2.imshow("right", threadR.latestFrame)
 
@@ -95,4 +112,4 @@ if __name__ == "__main__":
             break
 
     cv2.destroyAllWindows()
-    # controller.turnOffBus()
+    controller.turnOffBus()

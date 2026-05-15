@@ -44,7 +44,7 @@
         "right": 1.0
     },
     "PID": {
-        "targetCenter": 0.25,
+        "targetCenter": 0.5,
         "Kp": 0.35,
         "Ki": 0.0,
         "Kd": 0.08
