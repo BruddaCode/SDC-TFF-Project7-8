@@ -24,6 +24,8 @@ class LineThread(threading.Thread):
         self.roi = np.array([[self.roiKey["x1"], self.roiKey["y1"]], [self.roiKey["x2"], self.roiKey["y2"]], [self.roiKey["x3"], self.roiKey["y3"]], [self.roiKey["x4"], self.roiKey["y4"]]], np.int32)
         self.roiBounds = cv2.boundingRect(self.roi)
         self.A, self.B = self.getRoiLinePoints((self.lineKey["A"]["x"], self.lineKey["A"]["y"]), (self.lineKey["B"]["x"], self.lineKey["B"]["y"]))
+        # self.A = (self.lineKey["A"]["x"], self.lineKey["A"]["y"])
+        # self.B = (self.lineKey["B"]["x"], self.lineKey["B"]["y"])
         if self.cam.camPos == "left":
             self.detector = LineDetector(np.sqrt((self.lineKey["B"]["x"] - self.lineKey["A"]["x"])**2 + (self.lineKey["B"]["y"] - self.lineKey["A"]["y"])**2), (self.lineKey["A"]["x"], self.lineKey["A"]["y"]), (self.lineKey["B"]["x"], self.lineKey["B"]["y"]), True)
         else:
@@ -125,13 +127,13 @@ class LineThread(threading.Thread):
             displayRoiFrame = originalRoiFrame.copy()
             displayRoiFrame[mask == 255] = roiFrame[mask == 255]
             frame[y:y+h, x:x+w] = displayRoiFrame
-            # outline the roi
+            
+            # outline the roi, blue
             cv2.polylines(frame, [self.roi.reshape((-1, 1, 2))], True, (255, 0, 0), 2)
-            # draw the detection line
+            
+            # draw the detection line, red
             cv2.line(frame, (self.lineKey["A"]["x"],self.lineKey["A"]["y"]), (self.lineKey["B"]["x"],self.lineKey["B"]["y"]), (0,0,255), 2)
-            
-            cv2.line(frame, (x + self.A[0], y + self.A[1]), (x + self.B[0], y + self.B[1]), (255,255,0), 2)
-            
+                        
             self.latestFrame = frame
             self.latestIntersection = intersection
             time.sleep(1/30)

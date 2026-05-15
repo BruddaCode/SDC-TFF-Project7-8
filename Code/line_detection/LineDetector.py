@@ -2,6 +2,7 @@ import numpy as np
 import json
 import cv2
 import os
+import time
 
 class LineDetector():
     def __init__(self, lengthReferenceLine, bumperA, bumperB, side: bool):
@@ -36,9 +37,11 @@ class LineDetector():
     def lineProgress(self, intersection):
         if self.side:
             length = np.sqrt((self.bumperA[0] - intersection[0])**2 + (self.bumperA[1] - intersection[1])**2)
+            print(f"Left side - Length from bumperA to intersection: {length}, Reference line length: {self.lengthReferenceLine}, Progress before inversion: {length / self.lengthReferenceLine}")
             return length / self.lengthReferenceLine
         else:
             length = np.sqrt((self.bumperA[0] - intersection[0])**2 + (self.bumperA[1] - intersection[1])**2)
+            # print(f"Right side - Length from bumperA to intersection: {length}, Reference line length: {self.lengthReferenceLine}, Progress before inversion: {1 - (length / self.lengthReferenceLine)}")
             return 1 - length / self.lengthReferenceLine
 
 
@@ -87,13 +90,18 @@ class LineDetector():
             for line in lines:
                 x1, y1, x2, y2 = line[0]
                 intersectionCoord = self.intersect((x1, y1), (x2, y2), pointA, pointB)
+                # intersections line
                 cv2.line(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
                 if intersectionCoord is not None:
                     ix, iy = int(intersectionCoord[0]), int(intersectionCoord[1])
                     progress = self.lineProgress(intersectionCoord)
                     intersections.append((progress, (ix, iy)))
-
-        cv2.line(frame, pointA, pointB, (255, 255, 0), 2)
+        
+        # pink
+        cv2.line(frame, self.bumperA, self.bumperB, (255, 0, 255), 10)
+        
+        # yellow
+        cv2.line(frame, pointA, pointB, (0, 255, 255), 10)
 
         # return the chosen intersection and draw only that one
         if len(intersections) >= 2:

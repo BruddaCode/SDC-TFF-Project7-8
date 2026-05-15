@@ -1,7 +1,7 @@
 from line_detection.PIDController import PIDController
 from line_detection.StereoCamera import StereoCamera
 from line_detection.LineThread import LineThread
-from rijden.carcontroller import CarController
+# from rijden.carcontroller import CarController
 
 from cv2_enumerate_cameras import enumerate_cameras
 import time
@@ -33,8 +33,8 @@ if __name__ == "__main__":
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
     # camL = StereoCamera(index=ids[1], camPos=names[0])
     # camR = StereoCamera(index=ids[2], camPos=names[2])
-    camL = StereoCamera(videoPath="30-04-2026_beelden_Corne/left.mp4", camPos=names[0])
-    camR = StereoCamera(videoPath="30-04-2026_beelden_Corne/right.mp4", camPos=names[2])
+    camL = StereoCamera(videoPath="30-04-2026_beelden_Tom/left.mp4", camPos=names[0])
+    camR = StereoCamera(videoPath="30-04-2026_beelden_Tom/right.mp4", camPos=names[2])
     
     # controller = CarController()
     controller = None
@@ -57,6 +57,8 @@ if __name__ == "__main__":
         leftHit = threadL.latestIntersection
         rightHit = threadR.latestIntersection
         
+        # print(f"Left hit: {leftHit}, Right hit: {rightHit}")
+        
         if leftHit is not None and rightHit is not None:
             laneCenter = (wL * leftHit + wR * rightHit) / (wL + wR)
             # print (f"Left hit: {leftHit:.2f}, Right hit: {rightHit:.2f}, Lane center: {laneCenter:.2f}")
@@ -70,11 +72,11 @@ if __name__ == "__main__":
 
             # pass the actual process variable (laneCenter) to the PID
             steer = pid.compute(laneCenter, dt)
-            print(f"PID output (steer before mapping): {steer}")
+            # print(f"PID output (steer before mapping): {steer}")
 
             # map steer from [0.0, 1.5] to [-100, 100]
             steer = int(np.clip(np.interp(steer, [-0.03, 0.06], [-100, 100]), -100, 100))
-            print(f"de waarde om te sturen is {steer}, links: {leftHit}, rechts: {rightHit}, bericht:{steer/100*1.25}")
+            # print(f"de waarde om te sturen is {steer}, links: {leftHit}, rechts: {rightHit}, bericht:{steer/100*1.25}")
 
             # print(f"de waarde om te sturen is {steer}, links: {leftHit}, rechts: {rightHit}")
             
@@ -93,4 +95,4 @@ if __name__ == "__main__":
             break
 
     cv2.destroyAllWindows()
-    controller.turnOffBus()
+    # controller.turnOffBus()
