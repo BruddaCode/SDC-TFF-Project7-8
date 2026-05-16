@@ -8,8 +8,10 @@ class LineDetector():
     def __init__(self, lengthReferenceLine, bumperA, bumperB, side: bool):
         with open(os.path.join(os.path.dirname(__file__), '..', 'config.json'), 'r') as file:
             self.config = json.load(file)
+        self.claheKey = self.config["FilterSettings"]["Clahe"]
+        self.mergeRangeKey = self.config["FilterSettings"]["MergeRange"]
         self.gaussianKey = self.config["FilterSettings"]["GaussianBlur"]
-        self.thresholdKey = self.config["FilterSettings"]["Threshold"]
+        self.cannyKey = self.config["FilterSettings"]["Canny"]
         self.houghKey = self.config["FilterSettings"]["HoughLines"]
         self.lengthReferenceLine = lengthReferenceLine
         self.bumperA = bumperA
@@ -46,20 +48,20 @@ class LineDetector():
 
 
     def processFrame(self, frame):
-        
+                
         # convert to hls and apply CLAHE to the lightness channel
         hls = cv2.cvtColor(frame, cv2.COLOR_BGR2HLS)
         h, l, s = cv2.split(hls)
-        l = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(6, 6)).apply(l)
+        l = cv2.createCLAHE(clipLimit=self.claheKey["clipLimit"], tileGridSize=(self.claheKey["tileGridSize"], self.claheKey["tileGridSize"])).apply(l)
         hls = cv2.merge((h, l, s))
-        frame = cv2.inRange(hls, (0, 209, 0), (255, 255, 170))
+        frame = cv2.inRange(hls, (self.mergeRangeKey["lower"][0], self.mergeRangeKey["lower"][1], self.mergeRangeKey["lower"][2]), (self.mergeRangeKey["upper"][0], self.mergeRangeKey["upper"][1], self.mergeRangeKey["upper"][2]))
         frame = cv2.bitwise_and(l, l, mask=frame)
         
         # apply gaussian blur to reduce noise
-        frame = cv2.GaussianBlur(frame, (9, 9), 2)
+        frame = cv2.GaussianBlur(frame, (self.gaussianKey["KernelSize"], self.gaussianKey["KernelSize"]), self.gaussianKey["SigmaX"])
         
         # apply Canny edge detection
-        frame = cv2.Canny(frame, 100, 130)
+        frame = cv2.Canny(frame, self.cannyKey["threshold1"], self.cannyKey["threshold2"], self.cannyKey["apertureSize"])
         
         frame = cv2.filter2D(frame, -1, np.array([[10, 5, 10],[5, 10, 5],[10, 5, 10]]))
         
@@ -68,24 +70,19 @@ class LineDetector():
     def getIntersection(self, frame, pointA, pointB):
         # collect (progress, (x, y)) pairs for each intersection
         intersections = []
-        lines = cv2.HoughLinesP(self.processFrame(frame), self.houghKey["rho"], np.pi/self.houghKey["theta"], self.houghKey["threshold"], minLineLength=self.houghKey["minLineLength"], maxLineGap=self.houghKey["maxLineGap"])
+        processed = self.processFrame(frame)
+        lines = cv2.HoughLinesP(processed, self.houghKey["rho"], (np.pi/self.houghKey["theta"]), self.houghKey["threshold"], self.houghKey["lines"], self.houghKey["minLineLength"], self.houghKey["maxLineGap"])
 
         if lines is not None:
             for line in lines:
                 x1, y1, x2, y2 = line[0]
                 intersectionCoord = self.intersect((x1, y1), (x2, y2), pointA, pointB)
                 # intersections line
-                cv2.line(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                cv2.line(frame, (x1, y1), (x2, y2), (0, 0, 0), 2)
                 if intersectionCoord is not None:
                     ix, iy = int(intersectionCoord[0]), int(intersectionCoord[1])
                     progress = self.lineProgress(intersectionCoord)
                     intersections.append((progress, (ix, iy)))
-        
-        # pink
-        cv2.line(frame, self.bumperA, self.bumperB, (255, 0, 255), 10)
-        
-        # yellow
-        cv2.line(frame, pointA, pointB, (0, 255, 255), 10)
 
         # return the chosen intersection and draw only that one
         if len(intersections) >= 2:

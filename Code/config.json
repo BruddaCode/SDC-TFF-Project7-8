@@ -57,20 +57,30 @@
         "autoFocus": 0
     },
     "FilterSettings": {
-        "GaussianBlur": {
-            "KernelSize": 9,
-            "SigmaX": 1.4
+        "Clahe": {
+            "clipLimit": 2.0,
+            "tileGridSize": 8
         },
-        "Threshold": {
-            "threshold": 200,
-            "maxValue": 255
+        "MergeRange": {
+            "lower": [0, 220, 0],
+            "upper": [255, 255, 170]
+        },
+        "GaussianBlur": {
+            "KernelSize": 17,
+            "SigmaX": 0
+        },
+        "Canny": {
+            "threshold1": 100,
+            "threshold2": 150,
+            "apertureSize": 5
         },
         "HoughLines": {
             "rho": 1,
             "theta": 180,
-            "threshold": 200,
+            "threshold": 80,
+            "lines": 10,
             "minLineLength": 90,
-            "maxLineGap": 122
+            "maxLineGap": 120
         }
     }
 }

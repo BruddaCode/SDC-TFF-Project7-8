@@ -31,7 +31,6 @@ class LineThread(threading.Thread):
         self.latestIntersection = None
         self.roi = np.array([[self.roiKey["x1"], self.roiKey["y1"]], [self.roiKey["x2"], self.roiKey["y2"]], [self.roiKey["x3"], self.roiKey["y3"]], [self.roiKey["x4"], self.roiKey["y4"]]], np.int32)
         self.roiBounds = cv2.boundingRect(self.roi)
-        # self.A, self.B = self.getRoiLinePoints((self.lineKey["A"]["x"], self.lineKey["A"]["y"]), (self.lineKey["B"]["x"], self.lineKey["B"]["y"]))
         self.A = self.toRoi((self.lineKey["A"]["x"], self.lineKey["A"]["y"]), self.roiBounds)
         self.B = self.toRoi((self.lineKey["B"]["x"], self.lineKey["B"]["y"]), self.roiBounds)
         if self.cam.camPos == "left":
@@ -44,70 +43,6 @@ class LineThread(threading.Thread):
         x0, y0, _, _ = roi
         x, y = point
         return (x - x0, y - y0)
-
-    def getRoiLinePoints(self, pointA, pointB):
-        # Find all intersections of the line with ROI polygon edges and endpoints inside polygon
-        poly = self.roi.reshape((-1, 2)).astype(np.float32)
-        candidates = []
-        
-        # Check if endpoints are inside the polygon
-        if cv2.pointPolygonTest(poly, pointA, False) >= 0:
-            candidates.append(pointA)
-        if cv2.pointPolygonTest(poly, pointB, False) >= 0:
-            candidates.append(pointB)
-        
-        # Find intersections with polygon edges
-        for i in range(len(poly)):
-            edge_start = poly[i]
-            edge_end = poly[(i + 1) % len(poly)]
-            inter = self.lineSegmentIntersection(pointA, pointB, edge_start, edge_end)
-            if inter is not None:
-                candidates.append(inter)
-        
-        if len(candidates) < 2:
-            return self.toRoi(pointA, self.roiBounds), self.toRoi(pointB, self.roiBounds)
-        
-        # Remove duplicates and sort along the line direction
-        unique = []
-        for p in candidates:
-            if not any(np.linalg.norm(np.array(p) - np.array(u)) < 1e-3 for u in unique):
-                unique.append(p)
-        
-        if len(unique) < 2:
-            return self.toRoi(pointA, self.roiBounds), self.toRoi(pointB, self.roiBounds)
-        
-        # Sort by projection along line direction
-        pa = np.array(pointA, dtype=np.float32)
-        pb = np.array(pointB, dtype=np.float32)
-        direction = pb - pa
-        denom = np.dot(direction, direction)
-        if denom < 1e-6:
-            return self.toRoi(pointA, self.roiBounds), self.toRoi(pointB, self.roiBounds)
-        
-        unique.sort(key=lambda p: np.dot(np.array(p) - pa, direction) / denom)
-        clippedA = tuple(map(int, unique[0]))
-        clippedB = tuple(map(int, unique[-1]))
-        
-        return self.toRoi(clippedA, self.roiBounds), self.toRoi(clippedB, self.roiBounds)
-    
-    def lineSegmentIntersection(self, p1, p2, p3, p4):
-        x1, y1 = np.array(p1, dtype=np.float32)
-        x2, y2 = np.array(p2, dtype=np.float32)
-        x3, y3 = np.array(p3, dtype=np.float32)
-        x4, y4 = np.array(p4, dtype=np.float32)
-        
-        denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
-        if abs(denom) < 1e-6:
-            return None
-        
-        t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom
-        u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom
-        
-        if 0 <= t <= 1 and 0 <= u <= 1:
-            ix = x1 + t * (x2 - x1)
-            iy = y1 + t * (y2 - y1)
-            return (ix, iy)
-        return None
     
     def applyRoi(self, frame):
         x, y, w, h = self.roiBounds

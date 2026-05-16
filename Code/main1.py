@@ -33,8 +33,8 @@ if __name__ == "__main__":
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
     # camL = StereoCamera(index=ids[1], camPos=names[0])
     # camR = StereoCamera(index=ids[2], camPos=names[2])
-    camL = StereoCamera(videoPath="30-04-2026_verlichte_baan/left.mp4", camPos=names[0])
-    camR = StereoCamera(videoPath="30-04-2026_verlichte_baan/right.mp4", camPos=names[2])
+    camL = StereoCamera(videoPath="30-04-2026_beelden_Tom/left.mp4", camPos=names[0])
+    camR = StereoCamera(videoPath="30-04-2026_beelden_Tom/right.mp4", camPos=names[2])
     
     # controller = CarController()
     controller = None
