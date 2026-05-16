@@ -46,38 +46,22 @@ class LineDetector():
 
 
     def processFrame(self, frame):
-        # apply gaussian blur for less noise on the frame
-        filteredFrame = cv2.GaussianBlur(frame, (self.gaussianKey["KernelSize"], self.gaussianKey["KernelSize"]), self.gaussianKey["SigmaX"])
-
-        # Turn the frame gray
-        filteredFrame = cv2.cvtColor(filteredFrame, cv2.COLOR_BGR2GRAY)
-
-        # filter between dark and light and make dark black and light white
-        _, filteredFrame = cv2.threshold(filteredFrame, self.thresholdKey["threshold"], self.thresholdKey["maxValue"], cv2.THRESH_BINARY)
-
-        kernel = np.array([[10,5,10],
-                           [5,10,5],
-                           [10,5,10]])
-        frame = cv2.filter2D(filteredFrame, -1, kernel)
         
-        # cv2.imshow("zwartwit", dst)
+        # convert to hls and apply CLAHE to the lightness channel
+        hls = cv2.cvtColor(frame, cv2.COLOR_BGR2HLS)
+        h, l, s = cv2.split(hls)
+        l = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(6, 6)).apply(l)
+        hls = cv2.merge((h, l, s))
+        frame = cv2.inRange(hls, (0, 209, 0), (255, 255, 170))
+        frame = cv2.bitwise_and(l, l, mask=frame)
         
-        # hls = cv2.cvtColor(frame, cv2.COLOR_BGR2HLS)
-        # h, l, s = cv2.split(hls)
+        # apply gaussian blur to reduce noise
+        frame = cv2.GaussianBlur(frame, (9, 9), 2)
         
-        # l = cv2.createCLAHE(clipLimit=2, tileGridSize=(5, 5)).apply(l)
+        # apply Canny edge detection
+        frame = cv2.Canny(frame, 100, 130)
         
-        # hls = cv2.merge((h, l, s))
-        # frame = cv2.inRange(hls, (0, 180, 0), (255, 255, 180))
-        # frame = cv2.bitwise_and(l, l, mask=frame)
-        
-        # frame = cv2.Canny(frame, 17, 122)
-        
-        # kernel = np.ones(4, np.uint8)
-        # frame = cv2.dilate(frame, kernel, iterations=2)
-        # frame = cv2.erode(frame, kernel, iterations=3)
-        
-        # frame = cv2.filter2D(frame, -1, np.array([[10, 5, 10],[5, 10, 5],[10, 5, 10]]))
+        frame = cv2.filter2D(frame, -1, np.array([[10, 5, 10],[5, 10, 5],[10, 5, 10]]))
         
         return frame
     
@@ -91,7 +75,7 @@ class LineDetector():
                 x1, y1, x2, y2 = line[0]
                 intersectionCoord = self.intersect((x1, y1), (x2, y2), pointA, pointB)
                 # intersections line
-                cv2.line(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                cv2.line(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
                 if intersectionCoord is not None:
                     ix, iy = int(intersectionCoord[0]), int(intersectionCoord[1])
                     progress = self.lineProgress(intersectionCoord)

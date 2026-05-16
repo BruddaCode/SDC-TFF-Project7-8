@@ -68,9 +68,9 @@
         "HoughLines": {
             "rho": 1,
             "theta": 180,
-            "threshold": 150,
-            "minLineLength": 80,
-            "maxLineGap": 35
+            "threshold": 200,
+            "minLineLength": 90,
+            "maxLineGap": 122
         }
     }
 }
