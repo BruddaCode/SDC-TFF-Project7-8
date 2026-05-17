@@ -33,8 +33,8 @@ if __name__ == "__main__":
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
     # camL = StereoCamera(index=ids[1], camPos=names[0])
     # camR = StereoCamera(index=ids[2], camPos=names[2])
-    camL = StereoCamera(videoPath="30-04-2026_beelden_Tom/left.mp4", camPos=names[0])
-    camR = StereoCamera(videoPath="30-04-2026_beelden_Tom/right.mp4", camPos=names[2])
+    camL = StereoCamera(videoPath="30-04-2026_beelden_Corne/middle.mp4", camPos=names[0])
+    camR = StereoCamera(videoPath="30-04-2026_beelden_Corne/right.mp4", camPos=names[2])
     
     # controller = CarController()
     controller = None
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         prevTime = currTime
 
         steer = pid.compute(laneCenter, dt)
-        steer = int(np.clip(np.interp(steer, [-0.03, 0.06], [-100, 100]), -100, 100))
+        steer = -(int(np.clip(np.interp(steer, [-0.22, 0.22], [-100, 100]), -100, 100)))
 
         print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
         # controller.steer(-steer)
