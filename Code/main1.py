@@ -9,6 +9,8 @@ import json
 import cv2
 import numpy as np
 
+DEBUG = False
+
 def getCameraId(cameraName):
     cameraIDs = []
     
@@ -33,8 +35,8 @@ if __name__ == "__main__":
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
     # camL = StereoCamera(index=ids[1], camPos=names[0])
     # camR = StereoCamera(index=ids[2], camPos=names[2])
-    camL = StereoCamera(videoPath="30-04-2026_beelden_Corne/middle.mp4", camPos=names[0])
-    camR = StereoCamera(videoPath="30-04-2026_beelden_Corne/right.mp4", camPos=names[2])
+    camL = StereoCamera(videoPath="30-04-2026_verlichte_baan/left.mp4", camPos=names[0])
+    camR = StereoCamera(videoPath="30-04-2026_verlichte_baan/right.mp4", camPos=names[2])
     
     # controller = CarController()
     controller = None
@@ -43,9 +45,12 @@ if __name__ == "__main__":
 
     threadL = LineThread(camL)
     threadR = LineThread(camR)
+    
     # enable synchronous stepping so we can request frames together
-    threadL.enable_sync_mode(True)
-    threadR.enable_sync_mode(True)
+    if DEBUG:
+        threadL.enable_sync_mode(True)
+        threadR.enable_sync_mode(True)
+    
     threadL.start()
     threadR.start()
     # start indices for synchronization: we'll wait for each thread to advance
@@ -66,12 +71,14 @@ if __name__ == "__main__":
     lastRightTime = 0.0
     
     while True:
-        threadL.request_step()
-        threadR.request_step()
-        threadL.wait_for_index(prevLIndex)
-        threadR.wait_for_index(prevRIndex)
-        prevLIndex = threadL.latestIndex
-        prevRIndex = threadR.latestIndex
+        if DEBUG:
+            threadL.request_step()
+            threadR.request_step()
+            threadL.wait_for_index(prevLIndex)
+            threadR.wait_for_index(prevRIndex)
+            prevLIndex = threadL.latestIndex
+            prevRIndex = threadR.latestIndex
+        
         # controller.drive(40)
         leftHit  = threadL.latestIntersection
         rightHit = threadR.latestIntersection
