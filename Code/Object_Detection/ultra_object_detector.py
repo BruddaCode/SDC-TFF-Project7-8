@@ -8,7 +8,7 @@ Supports both camera input (by ID) and video file input.
 import cv2
 import time
 from pathlib import Path
-from ultralytics import YOLO
+from ultralytics.models.yolo.model import YOLO
 
 
 # ── Custom class colours (BGR) ────────────────────────────────────────────────
@@ -30,17 +30,21 @@ DEFAULT_COLOR = (200, 200, 200)
 # ── Configuration ─────────────────────────────────────────────────────────────
 SCRIPT_DIR  = Path(__file__).parent
 # MODEL_PATH  = SCRIPT_DIR / "OriginalDetection" / "ultra_object_detector_3000.pt"
-MODEL_PATH  = SCRIPT_DIR / "TheNewModel" / "sdc_yolov8n3-5" / "weights" / "best.pt"
+# MODEL_PATH  = SCRIPT_DIR / "TheNewModel" / "sdc_yolov8n3-5" / "weights" / "best.pt"
+MODEL_PATH  = SCRIPT_DIR / "TheNewModel" / "sdc_yolov8n3-5" / "weights" / "best_openvino_model"
 
 # Set VIDEO_SOURCE to:
 #   0, 1, 2 ...  for a camera (0 = default/built-in, 1 = first external, etc.)
 #   "path/to/video.mp4"  for a video file
-VIDEO_SOURCE = 1
+# VIDEO_SOURCE = 0
 # VIDEO_SOURCE = SCRIPT_DIR / "UselessVideos" / "corne.mp4"
+VIDEO_SOURCE = SCRIPT_DIR / "middle.mp4"
 OUTPUT_FILE = SCRIPT_DIR / "UselessVideos" / "NewModelTesting2" / "NewModelSecondTest.mp4"
 # Set OUTPUT_FILE = None to disable saving
 
 CONF_THRESH = 0.05
+
+CAMERA_RESOLUTION = (1280, 720)  # (width, height) for camera capture
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -87,6 +91,8 @@ def main():
 
     # ── Open capture ──────────────────────────────────────────────────────────
     cap = cv2.VideoCapture(VIDEO_SOURCE)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAMERA_RESOLUTION[0])
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_RESOLUTION[1])
     if not cap.isOpened():
         raise RuntimeError(f"Cannot open source: {source_label}")
 
@@ -113,7 +119,7 @@ def main():
                 break
 
             t0      = time.perf_counter()
-            results = model(frame, conf=CONF_THRESH, verbose=False)
+            results = model(frame, conf=CONF_THRESH, verbose=False, task="detect")
             elapsed = time.perf_counter() - t0
 
             fps        = 1.0 / elapsed if elapsed > 0 else 0
