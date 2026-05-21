@@ -40,12 +40,8 @@ class CarController:
         if speed >=1:
             self.brake(0)
         
-        message = can.Message(
-            arbitration_id=0x330,
-            data=[speed, 0, 1, 0, 0, 0, 0, 0],
-            is_extended_id=False
-        )
-        self.bus.send_periodic(message,self.canMessageSpeed)
+        self.drivemsg.data = [speed, 0, 1, 0, 0, 0, 0, 0]
+        self.drivetask.modify_data(self.drivemsg)
 
     def steer(self, angle: int,):
         if not (-100 <= angle <= 100):
@@ -64,12 +60,8 @@ class CarController:
         if force >=1:
             self.drive(0)
         
-        message = can.Message(
-            arbitration_id=0x110,
-            data=[force, 0, 0, 0, 0, 0, 0, 0],
-            is_extended_id=False
-        )
-        self.bus.send_periodic(message,self.canMessageSpeed)
+        self.brakemsg.data = [force, 0, 0, 0, 0, 0, 0, 0]
+        self.braketask.modify_data(self.brakemsg)
 
     def stop(self):
         self.drive(0)

@@ -38,8 +38,11 @@ if __name__ == "__main__":
     # camL = StereoCamera(videoPath="30-04-2026_verlichte_baan/left.mp4", camPos=names[0])
     # camR = StereoCamera(videoPath="30-04-2026_verlichte_baan/right.mp4", camPos=names[2])
     
-    controller = CarController()
-    # controller = None
+    if DEBUG:
+        controller = None
+    else:
+        controller = CarController()
+    
     wL = config["LineWeight"]["left"]
     wR = config["LineWeight"]["right"]
 
@@ -62,6 +65,7 @@ if __name__ == "__main__":
 
     prevCenter = targetCenter
     prevTime = time.time()
+    delay = 100  # ms between control updates
     
     # stale value tracking
     MAX_STALE_TIME = 0.5
@@ -69,6 +73,9 @@ if __name__ == "__main__":
     lastRightHit = None
     lastLeftTime  = 0.0
     lastRightTime = 0.0
+    
+    if controller is not None:
+        controller.drive(40)
     
     while True:
         if DEBUG:
@@ -79,12 +86,10 @@ if __name__ == "__main__":
             prevLIndex = threadL.latestIndex
             prevRIndex = threadR.latestIndex
         
-
-        if controller is not None:
-            controller.drive(40)
         leftHit  = threadL.latestIntersection
         rightHit = threadR.latestIntersection
         currTime = time.time()
+        print("CAN RIJ BERICHT!!!!")
 
         # update stored values if we have fresh detections
         if leftHit is not None:
@@ -128,7 +133,14 @@ if __name__ == "__main__":
         print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
         
         if controller is not None:
+            print("CAN STUUR BERICHT!!!!")
             controller.steer(steer)
+
+        # periodic steering update
+        # if controller is not None:
+        #     if currTime - prevTime >= delay / 1000.0:
+        #         print("CAN STUUR BERICHT!!!!")
+        #         controller.steer(steer)
 
         # print(f"Steering with value: {steer:.2f} based on lane center: {laneCenter:.2f}")
         
