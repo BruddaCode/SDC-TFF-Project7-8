@@ -11,6 +11,7 @@ class CarController:
     def __init__(self):
         self.bus = can.Bus(interface='socketcan', channel='can0', bitrate=500000)
         self.canMessageSpeed = 0.04
+        self.started = False
         
         self.brakemsg = can.Message(
             arbitration_id=0x110,

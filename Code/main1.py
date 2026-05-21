@@ -33,15 +33,13 @@ if __name__ == "__main__":
     ids = getCameraId(cameraKey["cameraName"])
     names = ["left", "middle", "right"]
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
-    camL = StereoCamera(index=ids[1], camPos=names[0])
-    camR = StereoCamera(index=ids[2], camPos=names[2])
-    # camL = StereoCamera(videoPath="30-04-2026_verlichte_baan/left.mp4", camPos=names[0])
-    # camR = StereoCamera(videoPath="30-04-2026_verlichte_baan/right.mp4", camPos=names[2])
+    # camL = StereoCamera(index=ids[1], camPos=names[0])
+    # camR = StereoCamera(index=ids[2], camPos=names[2])
+    camL = StereoCamera(videoPath="30-04-2026_verlichte_baan/left.mp4", camPos=names[0])
+    camR = StereoCamera(videoPath="30-04-2026_verlichte_baan/right.mp4", camPos=names[2])
     
-    if DEBUG:
-        controller = None
-    else:
-        controller = CarController()
+    controller = None
+    # controller = CarController()
     
     wL = config["LineWeight"]["left"]
     wR = config["LineWeight"]["right"]
@@ -65,7 +63,9 @@ if __name__ == "__main__":
 
     prevCenter = targetCenter
     prevTime = time.time()
-    delay = 100  # ms between control updates
+    
+    COUNTER = 0
+    delay = 5
     
     # stale value tracking
     MAX_STALE_TIME = 0.5
@@ -74,8 +74,10 @@ if __name__ == "__main__":
     lastLeftTime  = 0.0
     lastRightTime = 0.0
     
-    if controller is not None:
-        controller.drive(40)
+    # if controller is not None:
+    #     controller.drive(40)
+    
+    started = False
     
     while True:
         if DEBUG:
@@ -89,7 +91,6 @@ if __name__ == "__main__":
         leftHit  = threadL.latestIntersection
         rightHit = threadR.latestIntersection
         currTime = time.time()
-        print("CAN RIJ BERICHT!!!!")
 
         # update stored values if we have fresh detections
         if leftHit is not None:
@@ -132,17 +133,16 @@ if __name__ == "__main__":
 
         print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
         
-        if controller is not None:
-            print("CAN STUUR BERICHT!!!!")
-            controller.steer(steer)
-
+        # controller.drive(40) # voor als de kart niet naar voren wil rijden
+        
         # periodic steering update
-        # if controller is not None:
-        #     if currTime - prevTime >= delay / 1000.0:
-        #         print("CAN STUUR BERICHT!!!!")
-        #         controller.steer(steer)
+        if controller is not None:
+            COUNTER+=1
+            if COUNTER >= delay:
+                COUNTER = 0
+                # controller.drive(40) # voor als de kart niet naar voren wil rijden
+                controller.steer(steer)
 
-        # print(f"Steering with value: {steer:.2f} based on lane center: {laneCenter:.2f}")
         
         if threadL.latestFrame is not None:
             cv2.imshow("left", threadL.latestFrame)
@@ -154,6 +154,12 @@ if __name__ == "__main__":
             threadL.stop()
             threadR.stop()
             break
+        
+        # send drive command once after there is a valid detection, to start the car moving
+        if controller is not None and (leftValid or rightValid) and not started:
+            started = True
+            controller.drive(40)
+        
 
     cv2.destroyAllWindows()
     if controller is not None:
