@@ -79,7 +79,9 @@ if __name__ == "__main__":
             prevLIndex = threadL.latestIndex
             prevRIndex = threadR.latestIndex
         
-        controller.drive(40)
+
+        if controller is not None:
+            controller.drive(40)
         leftHit  = threadL.latestIntersection
         rightHit = threadR.latestIntersection
         currTime = time.time()
@@ -121,10 +123,13 @@ if __name__ == "__main__":
         prevTime = currTime
 
         steer = pid.compute(laneCenter, dt)
-        steer = -(int(np.clip(np.interp(steer, [-0.18, 0.18], [-100, 100]), -100, 100)))
+        steer = -(int(np.clip(np.interp(steer, [-0.20, 0.20], [-100, 100]), -100, 100)))
 
         print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
-        controller.steer(-abs(steer))
+        
+        if controller is not None:
+            controller.steer(steer)
+
         # print(f"Steering with value: {steer:.2f} based on lane center: {laneCenter:.2f}")
         
         if threadL.latestFrame is not None:
@@ -139,4 +144,5 @@ if __name__ == "__main__":
             break
 
     cv2.destroyAllWindows()
-    controller.turnOffBus()
+    if controller is not None:
+        controller.turnOffBus()
