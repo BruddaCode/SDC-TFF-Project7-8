@@ -1,7 +1,7 @@
 from line_detection.PIDController import PIDController
 from line_detection.StereoCamera import StereoCamera
 from line_detection.LineThread import LineThread
-# from rijden.carcontroller import CarController
+from rijden.carcontroller import CarController
 
 from cv2_enumerate_cameras import enumerate_cameras
 import time
@@ -33,13 +33,13 @@ if __name__ == "__main__":
     ids = getCameraId(cameraKey["cameraName"])
     names = ["left", "middle", "right"]
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
-    # camL = StereoCamera(index=ids[1], camPos=names[0])
-    # camR = StereoCamera(index=ids[2], camPos=names[2])
-    camL = StereoCamera(videoPath="30-04-2026_verlichte_baan/left.mp4", camPos=names[0])
-    camR = StereoCamera(videoPath="30-04-2026_verlichte_baan/right.mp4", camPos=names[2])
+    camL = StereoCamera(index=ids[1], camPos=names[0])
+    camR = StereoCamera(index=ids[2], camPos=names[2])
+    # camL = StereoCamera(videoPath="30-04-2026_verlichte_baan/left.mp4", camPos=names[0])
+    # camR = StereoCamera(videoPath="30-04-2026_verlichte_baan/right.mp4", camPos=names[2])
     
-    # controller = CarController()
-    controller = None
+    controller = CarController()
+    # controller = None
     wL = config["LineWeight"]["left"]
     wR = config["LineWeight"]["right"]
 
@@ -79,7 +79,7 @@ if __name__ == "__main__":
             prevLIndex = threadL.latestIndex
             prevRIndex = threadR.latestIndex
         
-        # controller.drive(40)
+        controller.drive(40)
         leftHit  = threadL.latestIntersection
         rightHit = threadR.latestIntersection
         currTime = time.time()
@@ -121,10 +121,10 @@ if __name__ == "__main__":
         prevTime = currTime
 
         steer = pid.compute(laneCenter, dt)
-        steer = -(int(np.clip(np.interp(steer, [-0.22, 0.22], [-100, 100]), -100, 100)))
+        steer = -(int(np.clip(np.interp(steer, [-0.18, 0.18], [-100, 100]), -100, 100)))
 
         print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
-        # controller.steer(-steer)
+        controller.steer(-abs(steer))
         # print(f"Steering with value: {steer:.2f} based on lane center: {laneCenter:.2f}")
         
         if threadL.latestFrame is not None:
@@ -139,4 +139,4 @@ if __name__ == "__main__":
             break
 
     cv2.destroyAllWindows()
-    # controller.turnOffBus()
+    controller.turnOffBus()
