@@ -1,9 +1,9 @@
 {
     "leftRoi": {
-        "x1": 130,
-        "y1": 100,
-        "x2": 330,
-        "y2": 80,
+        "x1": 80,
+        "y1": 10,
+        "x2": 310,
+        "y2": 30,
         "x3": 1040,
         "y3": 400,
         "x4": 590,
@@ -37,14 +37,14 @@
         "B": {
             "x": 1280,
             "y": 35
-        }
+        } 
     },
     "LineWeight": {
         "left": 0.938540268,
         "right": 1.0
     },
     "PID": {
-        "targetCenter": 0.25,
+        "targetCenter": 0.5,
         "Kp": 0.35,
         "Ki": 0.0,
         "Kd": 0.08
@@ -57,20 +57,30 @@
         "autoFocus": 0
     },
     "FilterSettings": {
-        "GaussianBlur": {
-            "KernelSize": 9,
-            "SigmaX": 1.4
+        "Clahe": {
+            "clipLimit": 2.0,
+            "tileGridSize": 8
         },
-        "Threshold": {
-            "threshold": 200,
-            "maxValue": 255
+        "MergeRange": {
+            "lower": [0, 220, 0],
+            "upper": [255, 255, 170]
+        },
+        "GaussianBlur": {
+            "KernelSize": 17,
+            "SigmaX": 0
+        },
+        "Canny": {
+            "threshold1": 100,
+            "threshold2": 150,
+            "apertureSize": 5
         },
         "HoughLines": {
             "rho": 1,
             "theta": 180,
-            "threshold": 150,
-            "minLineLength": 80,
-            "maxLineGap": 35
+            "threshold": 80,
+            "lines": 10,
+            "minLineLength": 90,
+            "maxLineGap": 120
         }
     }
 }

@@ -2,13 +2,16 @@ import numpy as np
 import json
 import cv2
 import os
+import time
 
 class LineDetector():
     def __init__(self, lengthReferenceLine, bumperA, bumperB, side: bool):
         with open(os.path.join(os.path.dirname(__file__), '..', 'config.json'), 'r') as file:
             self.config = json.load(file)
+        self.claheKey = self.config["FilterSettings"]["Clahe"]
+        self.mergeRangeKey = self.config["FilterSettings"]["MergeRange"]
         self.gaussianKey = self.config["FilterSettings"]["GaussianBlur"]
-        self.thresholdKey = self.config["FilterSettings"]["Threshold"]
+        self.cannyKey = self.config["FilterSettings"]["Canny"]
         self.houghKey = self.config["FilterSettings"]["HoughLines"]
         self.lengthReferenceLine = lengthReferenceLine
         self.bumperA = bumperA
@@ -36,64 +39,50 @@ class LineDetector():
     def lineProgress(self, intersection):
         if self.side:
             length = np.sqrt((self.bumperA[0] - intersection[0])**2 + (self.bumperA[1] - intersection[1])**2)
+            # print(f"Left side - Length from bumperA to intersection: {length}, Reference line length: {self.lengthReferenceLine}, Progress before inversion: {length / self.lengthReferenceLine}")
             return length / self.lengthReferenceLine
         else:
             length = np.sqrt((self.bumperA[0] - intersection[0])**2 + (self.bumperA[1] - intersection[1])**2)
+            # print(f"Right side - Length from bumperA to intersection: {length}, Reference line length: {self.lengthReferenceLine}, Progress before inversion: {1 - (length / self.lengthReferenceLine)}")
             return 1 - length / self.lengthReferenceLine
 
 
     def processFrame(self, frame):
-        # apply gaussian blur for less noise on the frame
-        filteredFrame = cv2.GaussianBlur(frame, (self.gaussianKey["KernelSize"], self.gaussianKey["KernelSize"]), self.gaussianKey["SigmaX"])
-
-        # Turn the frame gray
-        filteredFrame = cv2.cvtColor(filteredFrame, cv2.COLOR_BGR2GRAY)
-
-        # filter between dark and light and make dark black and light white
-        _, filteredFrame = cv2.threshold(filteredFrame, self.thresholdKey["threshold"], self.thresholdKey["maxValue"], cv2.THRESH_BINARY)
-
-        kernel = np.array([[10,5,10],
-                           [5,10,5],
-                           [10,5,10]])
-        frame = cv2.filter2D(filteredFrame, -1, kernel)
+                
+        # convert to hls and apply CLAHE to the lightness channel
+        hls = cv2.cvtColor(frame, cv2.COLOR_BGR2HLS)
+        h, l, s = cv2.split(hls)
+        l = cv2.createCLAHE(clipLimit=self.claheKey["clipLimit"], tileGridSize=(self.claheKey["tileGridSize"], self.claheKey["tileGridSize"])).apply(l)
+        hls = cv2.merge((h, l, s))
+        frame = cv2.inRange(hls, (self.mergeRangeKey["lower"][0], self.mergeRangeKey["lower"][1], self.mergeRangeKey["lower"][2]), (self.mergeRangeKey["upper"][0], self.mergeRangeKey["upper"][1], self.mergeRangeKey["upper"][2]))
+        frame = cv2.bitwise_and(l, l, mask=frame)
         
-        # cv2.imshow("zwartwit", dst)
+        # apply gaussian blur to reduce noise
+        frame = cv2.GaussianBlur(frame, (self.gaussianKey["KernelSize"], self.gaussianKey["KernelSize"]), self.gaussianKey["SigmaX"])
         
-        # hls = cv2.cvtColor(frame, cv2.COLOR_BGR2HLS)
-        # h, l, s = cv2.split(hls)
+        # apply Canny edge detection
+        frame = cv2.Canny(frame, self.cannyKey["threshold1"], self.cannyKey["threshold2"], self.cannyKey["apertureSize"])
         
-        # l = cv2.createCLAHE(clipLimit=2, tileGridSize=(5, 5)).apply(l)
-        
-        # hls = cv2.merge((h, l, s))
-        # frame = cv2.inRange(hls, (0, 180, 0), (255, 255, 180))
-        # frame = cv2.bitwise_and(l, l, mask=frame)
-        
-        # frame = cv2.Canny(frame, 17, 122)
-        
-        # kernel = np.ones(4, np.uint8)
-        # frame = cv2.dilate(frame, kernel, iterations=2)
-        # frame = cv2.erode(frame, kernel, iterations=3)
-        
-        # frame = cv2.filter2D(frame, -1, np.array([[10, 5, 10],[5, 10, 5],[10, 5, 10]]))
+        frame = cv2.filter2D(frame, -1, np.array([[10, 5, 10],[5, 10, 5],[10, 5, 10]]))
         
         return frame
     
     def getIntersection(self, frame, pointA, pointB):
         # collect (progress, (x, y)) pairs for each intersection
         intersections = []
-        lines = cv2.HoughLinesP(self.processFrame(frame), self.houghKey["rho"], np.pi/self.houghKey["theta"], self.houghKey["threshold"], minLineLength=self.houghKey["minLineLength"], maxLineGap=self.houghKey["maxLineGap"])
+        processed = self.processFrame(frame)
+        lines = cv2.HoughLinesP(processed, self.houghKey["rho"], (np.pi/self.houghKey["theta"]), self.houghKey["threshold"], self.houghKey["lines"], self.houghKey["minLineLength"], self.houghKey["maxLineGap"])
 
         if lines is not None:
             for line in lines:
                 x1, y1, x2, y2 = line[0]
                 intersectionCoord = self.intersect((x1, y1), (x2, y2), pointA, pointB)
-                cv2.line(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                # intersections line
+                cv2.line(frame, (x1, y1), (x2, y2), (0, 0, 0), 2)
                 if intersectionCoord is not None:
                     ix, iy = int(intersectionCoord[0]), int(intersectionCoord[1])
                     progress = self.lineProgress(intersectionCoord)
                     intersections.append((progress, (ix, iy)))
-
-        cv2.line(frame, pointA, pointB, (255, 255, 0), 2)
 
         # return the chosen intersection and draw only that one
         if len(intersections) >= 2:
