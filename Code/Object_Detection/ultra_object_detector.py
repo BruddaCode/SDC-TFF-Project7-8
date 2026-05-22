@@ -27,6 +27,47 @@ CLASS_COLORS = {
 }
 DEFAULT_COLOR = (200, 200, 200)
 
+# ── Camera / distance estimation constants ────────────────────────────────────
+# Logitech StreamCam: 3.7mm focal length, 1/2.8" sensor (5.37mm wide)
+FOCAL_LENGTH_MM  = 3.7
+SENSOR_WIDTH_MM  = 5.37
+IMAGE_WIDTH_PX   = 1280   # must match CAMERA_RESOLUTION width
+
+# Real-world widths (metres) for each class — used for distance estimation.
+# Width is used where the object is wider than tall (cars, signs).
+# Height is used for tall/narrow objects (person, traffic light) — USE_HEIGHT=True.
+OBJECT_REAL_SIZE = {
+    "car":                  (1.80, False),  # ~1.8m wide
+    "one-way-left":         (0.45, False),  # road sign ~45cm wide
+    "sign-left-only":       (0.45, False),
+    "speed-sign-20":        (0.40, False),  # speed sign ~40cm diameter
+    "speed-sign-30":        (0.40, False),
+    "stop-sign":            (0.60, False),  # stop sign ~60cm
+    "traffic-light-green":  (0.20, True),   # light housing ~20cm tall
+    "traffic-light-red":    (0.20, True),
+    "traffic-light-off":    (0.20, True),
+    "zebra-crossing":       (3.00, False),  # crossing ~3m wide
+    "person":               (0.50, True),   # shoulder width ~50cm
+}
+
+
+def estimate_distance(label: str, bbox_w_px: int, bbox_h_px: int):
+    """
+    Estimate distance in metres using the pinhole camera model:
+        distance = (real_size_m * focal_length_mm * image_width_px)
+                   / (bbox_size_px * sensor_width_mm)
+    Returns None if the class isn't in OBJECT_REAL_SIZE.
+    """
+    if label not in OBJECT_REAL_SIZE:
+        return None
+    real_size_m, use_height = OBJECT_REAL_SIZE[label]
+    bbox_size_px = bbox_h_px if use_height else bbox_w_px
+    if bbox_size_px <= 0:
+        return None
+    distance = (real_size_m * FOCAL_LENGTH_MM * IMAGE_WIDTH_PX) / (bbox_size_px * SENSOR_WIDTH_MM)
+    return round(distance, 1)
+
+
 # ── Configuration ─────────────────────────────────────────────────────────────
 SCRIPT_DIR  = Path(__file__).parent
 # MODEL_PATH  = SCRIPT_DIR / "OriginalDetection" / "ultra_object_detector_3000.pt"
@@ -36,10 +77,10 @@ MODEL_PATH  = SCRIPT_DIR / "TheNewModel" / "sdc_yolov8n3-5" / "weights" / "best_
 # Set VIDEO_SOURCE to:
 #   0, 1, 2 ...  for a camera (0 = default/built-in, 1 = first external, etc.)
 #   "path/to/video.mp4"  for a video file
-# VIDEO_SOURCE = 0
+VIDEO_SOURCE = 1
 # VIDEO_SOURCE = SCRIPT_DIR / "UselessVideos" / "corne.mp4"
-VIDEO_SOURCE = SCRIPT_DIR / "middle.mp4"
-OUTPUT_FILE = SCRIPT_DIR / "UselessVideos" / "NewModelTesting2" / "NewModelSecondTest.mp4"
+# VIDEO_SOURCE = SCRIPT_DIR / "middle.mp4"
+OUTPUT_FILE = SCRIPT_DIR / "UselessVideos" / "NewModelTesting2" / "NewModelSixthTest.mp4"
 # Set OUTPUT_FILE = None to disable saving
 
 CONF_THRESH = 0.05
@@ -47,8 +88,27 @@ CONF_THRESH = 0.05
 CAMERA_RESOLUTION = (1280, 720)  # (width, height) for camera capture
 # ─────────────────────────────────────────────────────────────────────────────
 
+CORNER_LEN   = 18   # length of each corner tick in pixels
+CORNER_THICK = 3    # thickness of corner ticks
+
 
 # ── Drawing helper ────────────────────────────────────────────────────────────
+
+def draw_corner_box(frame, x1, y1, x2, y2, color, thickness=CORNER_THICK, length=CORNER_LEN):
+    """Draw corner-only bounding box edges instead of a full rectangle."""
+    # Top-left
+    cv2.line(frame, (x1, y1),          (x1 + length, y1),          color, thickness)
+    cv2.line(frame, (x1, y1),          (x1,          y1 + length),  color, thickness)
+    # Top-right
+    cv2.line(frame, (x2, y1),          (x2 - length, y1),          color, thickness)
+    cv2.line(frame, (x2, y1),          (x2,          y1 + length),  color, thickness)
+    # Bottom-left
+    cv2.line(frame, (x1, y2),          (x1 + length, y2),          color, thickness)
+    cv2.line(frame, (x1, y2),          (x1,          y2 - length),  color, thickness)
+    # Bottom-right
+    cv2.line(frame, (x2, y2),          (x2 - length, y2),          color, thickness)
+    cv2.line(frame, (x2, y2),          (x2,          y2 - length),  color, thickness)
+
 
 def draw_detections(frame, results, model):
     boxes = results[0].boxes
@@ -59,8 +119,17 @@ def draw_detections(frame, results, model):
         label        = model.names[cls]
         color        = CLASS_COLORS.get(label, DEFAULT_COLOR)
 
-        cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-        text = f"{label} {conf:.2f}"
+        bbox_w = x2 - x1
+        bbox_h = y2 - y1
+
+        # Corner-style bounding box
+        draw_corner_box(frame, x1, y1, x2, y2, color)
+
+        # Distance estimate
+        dist = estimate_distance(label, bbox_w, bbox_h)
+        dist_str = f"  {dist}m" if dist is not None else ""
+
+        text = f"{label} {conf:.2f}{dist_str}"
         (tw, th), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)
         cv2.rectangle(frame, (x1, y1 - th - 6), (x1 + tw + 2, y1), color, -1)
         cv2.putText(frame, text, (x1 + 1, y1 - 4),
