@@ -41,8 +41,15 @@ DIST_COEFFS = np.array(
 )
 
 # Focal lengths in pixels (directly from camera matrix — no sensor guesswork)
-FX = CAMERA_MATRIX[0, 0]  # 1425.76 px  (horizontal)
-FY = CAMERA_MATRIX[1, 1]  # 1420.99 px  (vertical)
+# Calibration was done at 1920x1080 but we capture at 1280x720.
+# Focal lengths must be scaled down proportionally otherwise distances
+# read ~1.5x too far (which is exactly the bug we were seeing).
+CALIB_WIDTH  = 1920
+CALIB_HEIGHT = 1080
+CAPTURE_WIDTH, CAPTURE_HEIGHT = CAMERA_RESOLUTION  # 1280, 720
+
+FX = CAMERA_MATRIX[0, 0] * (CAPTURE_WIDTH  / CALIB_WIDTH)   # 1425.76 -> 950.5 px
+FY = CAMERA_MATRIX[1, 1] * (CAPTURE_HEIGHT / CALIB_HEIGHT)  # 1420.99 -> 947.3 px
 
 # ── Real-world object sizes (metres) ─────────────────────────────────────────
 # (real_size_m, use_height)
@@ -95,9 +102,9 @@ SCRIPT_DIR  = Path(__file__).parent
 # MODEL_PATH  = SCRIPT_DIR / "TheNewModel" / "sdc_yolov8n3-5" / "weights" / "best.pt"
 MODEL_PATH  = SCRIPT_DIR / "TheNewModel" / "sdc_yolov8n3-5" / "weights" / "best_openvino_model"
 
-VIDEO_SOURCE = 0
+VIDEO_SOURCE = 1
 # VIDEO_SOURCE = SCRIPT_DIR / "UselessVideos" / "corne.mp4"
-OUTPUT_FILE  = SCRIPT_DIR / "UselessVideos" / "NewModelTesting2" / "NewModelSeventhTest.mp4"
+OUTPUT_FILE  = SCRIPT_DIR / "UselessVideos" / "NewModelTesting2" / "NewModelSixthTest.mp4"
 # Set OUTPUT_FILE = None to disable saving
 
 CONF_THRESH       = 0.05
