@@ -1,11 +1,15 @@
+import os
+
+os.environ.setdefault("QT_STYLE_OVERRIDE", "Fusion")
+os.environ.setdefault("QT_QPA_PLATFORM", "xcb")
+
 import cv2
 import numpy as np
 import time
 import json
-import os
 
 # SOURCE_FOLDER = "30-04-2026_beelden_Corne"
-SOURCE_FOLDER = "30-04-2026_verlichte_baan"
+SOURCE_FOLDER = "30-04-2026_beelden_Tom"
 # SOURCE_FOLDER = "2026-04-02-test3-720"
 
 SOURCE_L = f"{SOURCE_FOLDER}/left.mp4"
@@ -218,6 +222,27 @@ def add_label(frame, label):
     cv2.putText(labeled, label, (12, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
     return labeled
 
+
+def render_controls_panel(lines, width=560, height=720):
+    panel = np.full((height, width, 3), 24, dtype=np.uint8)
+
+    cv2.putText(panel, "Controls", (16, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2)
+    cv2.line(panel, (16, 40), (width - 16, 40), (80, 80, 80), 1)
+
+    rows_per_column = max(1, (len(lines) + 1) // 2)
+    column_width = width // 2
+    start_y = 68
+    row_height = max(20, (height - start_y - 12) // rows_per_column)
+
+    for index, (text, color) in enumerate(lines):
+        column = 0 if index < rows_per_column else 1
+        row = index if column == 0 else index - rows_per_column
+        x = 16 + column * column_width
+        y = start_y + row * row_height
+        cv2.putText(panel, text, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+    return panel
+
 def filter_frame(frame):
         
     hls = cv2.cvtColor(frame, cv2.COLOR_BGR2HLS)
@@ -234,6 +259,7 @@ def filter_frame(frame):
     # apply gaussian blur for less noise on the frame
     if enable_blur:
         frame = cv2.GaussianBlur(frame, blur, sigma)
+        # frame = cv2.filter2D(frame, -1, np.array([[10, 5, 10],[5, 10, 5],[10, 5, 10]]))
     
     # canny edge detection to find edges in the frame
     if enable_canny:
@@ -385,8 +411,8 @@ def load_parameters(filename="parameters.json"):
 
 load_parameters()
 
-cv2.namedWindow("Controls", cv2.WINDOW_NORMAL)
-cv2.resizeWindow("Controls", 520, 780)
+cv2.namedWindow("Controls", cv2.WINDOW_GUI_NORMAL)
+cv2.resizeWindow("Controls", 980, 1200)
 
 cv2.createTrackbar("Enable CLAHE", "Controls", enable_clahe, 1, noop)
 cv2.createTrackbar("Clip limit", "Controls", int(clipLimit*10), 100, noop)
@@ -554,7 +580,42 @@ while True:
     timing_label = f"Avg apply_intersection_on_roi: {roi_timing_avg_ms:.2f} ms"
     cv2.putText(dashboard, timing_label, (12, target_height - 18), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
-    cv2.resizeWindow("Camera Dashboard", target_width, target_height)
+    control_lines = [
+        (f"CLAHE: {enable_clahe}", (255, 255, 255)),
+        (f"Clip: {clipLimit:.1f}", (255, 255, 255)),
+        (f"Tile: {tileGridSize[0]}", (255, 255, 255)),
+        (f"HLS low: {hls_lower_bound}", (255, 255, 255)),
+        (f"HLS high: {hls_upper_bound}", (255, 255, 255)),
+        (f"Blur: {enable_blur}/{blur_value}", (255, 255, 255)),
+        (f"Sigma: {sigma}", (255, 255, 255)),
+        (f"Canny: {enable_canny}", (255, 255, 255)),
+        (f"Canny t1: {canny_threshold1}", (255, 255, 255)),
+        (f"Canny t2: {canny_threshold2}", (255, 255, 255)),
+        (f"Sobel: {enable_sobel}", (255, 255, 255)),
+        (f"Sobel k: {sobel_ksize}", (255, 255, 255)),
+        (f"Sobel th: {sobel_threshold}", (255, 255, 255)),
+        (f"Morph: {enable_morph}", (255, 255, 255)),
+        (f"Kernel: {canny_kernel[0]}", (255, 255, 255)),
+        (f"Dil iters: {canny_dilation_iterations}", (255, 255, 255)),
+        (f"Ero iters: {canny_erosion_iterations}", (255, 255, 255)),
+        (f"Adapt: {enable_adaptive_threshold}", (255, 255, 255)),
+        (f"Adapt th: {adaptive_threshold}", (255, 255, 255)),
+        (f"Adapt rng: {adaptive_range}", (255, 255, 255)),
+        (f"Adapt c: {adaptive_constant}", (255, 255, 255)),
+        (f"Thresh: {enable_threshold}", (255, 255, 255)),
+        (f"Cont th: {contrast_threshold}", (255, 255, 255)),
+        (f"Hough th: {hough_threshold}", (255, 255, 255)),
+        (f"Min len: {minLineLength}", (255, 255, 255)),
+        (f"Max gap: {maxLineGap}", (255, 255, 255)),
+        (f"Hough pi: {hough_pi}", (255, 255, 255)),
+        (f"V line x: {vertical_line_x}", (255, 255, 255)),
+        (f"H line y: {horizontal_line_y}", (255, 255, 255)),
+        (f"ROI: {roi}", (255, 255, 255)),
+    ]
+    controls_panel = render_controls_panel(control_lines, width=560, height=target_height)
+    dashboard = np.hstack([dashboard, controls_panel])
+
+    cv2.resizeWindow("Camera Dashboard", target_width + 560, target_height)
     cv2.imshow("Camera Dashboard", dashboard)
 
     key = cv2.waitKey(30) & 0xFF

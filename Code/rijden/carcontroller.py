@@ -10,7 +10,29 @@ main.py will use this to control the car's movement, steering, and braking.
 class CarController:
     def __init__(self):
         self.bus = can.Bus(interface='socketcan', channel='can0', bitrate=500000)
-        self.canMessageSpeed = 0.009
+        self.canMessageSpeed = 0.04
+        self.started = False
+        
+        self.brakemsg = can.Message(
+            arbitration_id=0x110,
+            data=[0, 0, 0, 0, 0, 0, 0, 0],
+            is_extended_id=False
+        )
+        self.braketask = self.bus.send_periodic(self.brakemsg,self.canMessageSpeed)
+        
+        self.steermsg = can.Message(
+            arbitration_id=0x220,
+            data=[0, 0, 0, 0, 0, 0, 195, 0],
+            is_extended_id=False
+        )
+        self.steertask = self.bus.send_periodic(self.steermsg,self.canMessageSpeed)
+
+        self.drivemsg = can.Message(
+            arbitration_id=0x330,
+            data=[0, 0, 1, 0, 0, 0, 0, 0],
+            is_extended_id=False
+        )
+        self.drivetask = self.bus.send_periodic(self.drivemsg,self.canMessageSpeed)
 
     def drive(self, speed: int):
         if not (0 <= speed <= 255):
@@ -19,26 +41,18 @@ class CarController:
         if speed >=1:
             self.brake(0)
         
-        message = can.Message(
-            arbitration_id=0x330,
-            data=[speed, 0, 1, 0, 0, 0, 0, 0],
-            is_extended_id=False
-        )
-        self.bus.send_periodic(message,self.canMessageSpeed)
+        self.drivemsg.data = [speed, 0, 1, 0, 0, 0, 0, 0]
+        self.drivetask.modify_data(self.drivemsg)
 
     def steer(self, angle: int,):
         if not (-100 <= angle <= 100):
             raise ValueError("Angle must be between -100 and 100")
-        angle = angle/100*1.25
+        angle = float(round((angle/100*1.25), 2))
         print(angle)
-        angleBytes = struct.pack('<f', angle)
-
-        message = can.Message(
-            arbitration_id=0x220,
-            data=[*angleBytes, 0, 0, 0, 0],
-            is_extended_id=False
-        )
-        self.bus.send_periodic(message,self.canMessageSpeed)
+        angleBytes = list(bytearray(struct.pack('f', angle)))
+        self.steermsg.data = angleBytes + [0, 0, 195, 0]
+        # print steermsg data for debugging in ints
+        self.steertask.modify_data(self.steermsg)
 
     def brake(self, force: int = 100):
         if not (0 <= force <= 100):
@@ -47,16 +61,16 @@ class CarController:
         if force >=1:
             self.drive(0)
         
-        message = can.Message(
-            arbitration_id=0x110,
-            data=[force, 0, 0, 0, 0, 0, 0, 0],
-            is_extended_id=False
-        )
-        self.bus.send_periodic(message,self.canMessageSpeed)
+        self.brakemsg.data = [force, 0, 0, 0, 0, 0, 0, 0]
+        self.braketask.modify_data(self.brakemsg)
 
     def stop(self):
         self.drive(0)
         self.brake()
+
+    def listener(self): 
+        for msg in self.bus:
+            print(f"Received message: {msg}")
 
     def turnOffBus(self):
         self.bus.shutdown()

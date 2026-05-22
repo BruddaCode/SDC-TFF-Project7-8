@@ -9,6 +9,8 @@ import json
 import cv2
 import numpy as np
 
+DEBUG = False
+
 def getCameraId(cameraName):
     cameraIDs = []
     
@@ -33,18 +35,28 @@ if __name__ == "__main__":
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
     # camL = StereoCamera(index=ids[1], camPos=names[0])
     # camR = StereoCamera(index=ids[2], camPos=names[2])
-    camL = StereoCamera(videoPath="30-04-2026_beelden_Corne/left.mp4", camPos=names[0])
-    camR = StereoCamera(videoPath="30-04-2026_beelden_Corne/right.mp4", camPos=names[2])
+    camL = StereoCamera(videoPath="30-04-2026_verlichte_baan/left.mp4", camPos=names[0])
+    camR = StereoCamera(videoPath="30-04-2026_verlichte_baan/right.mp4", camPos=names[2])
     
-    # controller = CarController()
     controller = None
+    # controller = CarController()
+    
     wL = config["LineWeight"]["left"]
     wR = config["LineWeight"]["right"]
 
     threadL = LineThread(camL)
     threadR = LineThread(camR)
+    
+    # enable synchronous stepping so we can request frames together
+    if DEBUG:
+        threadL.enable_sync_mode(True)
+        threadR.enable_sync_mode(True)
+    
     threadL.start()
     threadR.start()
+    # start indices for synchronization: we'll wait for each thread to advance
+    prevLIndex = threadL.latestIndex
+    prevRIndex = threadR.latestIndex
     
     targetCenter = PIDKey["targetCenter"]
     pid = PIDController(PIDKey["Kp"], PIDKey["Ki"], PIDKey["Kd"], targetCenter)
@@ -52,38 +64,89 @@ if __name__ == "__main__":
     prevCenter = targetCenter
     prevTime = time.time()
     
+    COUNTER = 0
+    delay = 5
+    
+    # stale value tracking
+    MAX_STALE_TIME = 0.5
+    lastLeftHit  = None
+    lastRightHit = None
+    lastLeftTime  = 0.0
+    lastRightTime = 0.0
+    
+    # if controller is not None:
+    #     controller.drive(40)
+    
+    started = False
+    
     while True:
-        # controller.drive(40)
-        leftHit = threadL.latestIntersection
-        rightHit = threadR.latestIntersection
+        if DEBUG:
+            threadL.request_step()
+            threadR.request_step()
+            threadL.wait_for_index(prevLIndex)
+            threadR.wait_for_index(prevRIndex)
+            prevLIndex = threadL.latestIndex
+            prevRIndex = threadR.latestIndex
         
-        if leftHit is not None and rightHit is not None:
-            laneCenter = (wL * leftHit + wR * rightHit) / (wL + wR)
-            # print (f"Left hit: {leftHit:.2f}, Right hit: {rightHit:.2f}, Lane center: {laneCenter:.2f}")
+        leftHit  = threadL.latestIntersection
+        rightHit = threadR.latestIntersection
+        currTime = time.time()
 
-            laneCenter = 0.6 * prevCenter + 0.4 * laneCenter
-            prevCenter = laneCenter
-      
-            currTime = time.time()
-            dt = currTime - prevTime
-            prevTime = currTime
+        # update stored values if we have fresh detections
+        if leftHit is not None:
+            lastLeftHit  = leftHit
+            lastLeftTime = currTime
+        if rightHit is not None:
+            lastRightHit  = rightHit
+            lastRightTime = currTime
 
-            # pass the actual process variable (laneCenter) to the PID
-            steer = pid.compute(laneCenter, dt)
-            print(f"PID output (steer before mapping): {steer}")
+        # check if stored values are still within the stale timeout
+        leftValid  = lastLeftHit  is not None and (currTime - lastLeftTime)  < MAX_STALE_TIME
+        rightValid = lastRightHit is not None and (currTime - lastRightTime) < MAX_STALE_TIME
 
-            # map steer from [0.0, 1.5] to [-100, 100]
-            steer = int(np.clip(np.interp(steer, [-0.03, 0.06], [-100, 100]), -100, 100))
-            print(f"de waarde om te sturen is {steer}, links: {leftHit}, rechts: {rightHit}, bericht:{steer/100*1.25}")
+        if leftValid and rightValid:
+            mode = "both"
+            laneCenter = lastLeftHit / (lastLeftHit + lastRightHit)
 
-            # print(f"de waarde om te sturen is {steer}, links: {leftHit}, rechts: {rightHit}")
-            
-            # controller.steer(-steer)
-            # print(f"Steering with value: {steer:.2f} based on lane center: {laneCenter:.2f}")
+        elif leftValid:
+            mode = "single-left"
+            laneCenter = lastLeftHit
+
+        elif rightValid:
+            mode = "single-right"
+            laneCenter = 1 - lastRightHit
+
+        else:
+            mode = "lost"
+            laneCenter = prevCenter  # hold last known center
+
+
+        # smooth and compute PID
+        laneCenter = 0.6 * prevCenter + 0.4 * laneCenter
+        prevCenter = laneCenter
+
+        dt = currTime - prevTime
+        prevTime = currTime
+
+        steer = pid.compute(laneCenter, dt)
+        steer = -(int(np.clip(np.interp(steer, [-0.20, 0.20], [-100, 100]), -100, 100)))
+
+        print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
+        
+        # controller.drive(40) # voor als de kart niet naar voren wil rijden
+        
+        # periodic steering update
+        if controller is not None:
+            COUNTER+=1
+            if COUNTER >= delay:
+                COUNTER = 0
+                # controller.drive(40) # voor als de kart niet naar voren wil rijden
+                controller.steer(steer)
+
         
         if threadL.latestFrame is not None:
             cv2.imshow("left", threadL.latestFrame)
-        
+
         if threadR.latestFrame is not None:
             cv2.imshow("right", threadR.latestFrame)
 
@@ -91,6 +154,13 @@ if __name__ == "__main__":
             threadL.stop()
             threadR.stop()
             break
+        
+        # send drive command once after there is a valid detection, to start the car moving
+        if controller is not None and (leftValid or rightValid) and not started:
+            started = True
+            controller.drive(40)
+        
 
     cv2.destroyAllWindows()
-    controller.turnOffBus()
+    if controller is not None:
+        controller.turnOffBus()

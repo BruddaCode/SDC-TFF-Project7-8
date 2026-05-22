@@ -34,7 +34,7 @@ class StereoCamera():
         ret, frame = self.cam.read()
         if not ret:
             print("Failed to grab frame")
-            return None
+            return None        
         return frame
     
     def release(self):

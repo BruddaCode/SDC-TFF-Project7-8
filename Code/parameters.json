@@ -13,7 +13,7 @@
   "hls_upper_bound": [
     255,
     255,
-    121
+    170
   ],
   "enable_blur": 1,
   "blur": [
@@ -23,7 +23,7 @@
   "sigma": 2,
   "enable_canny": 1,
   "canny_threshold1": 100,
-  "canny_threshold2": 255,
+  "canny_threshold2": 230,
   "enable_morph": 0,
   "canny_kernel": [
     1,
