@@ -140,8 +140,8 @@ if __name__ == "__main__":
             COUNTER+=1
             if COUNTER >= delay:
                 COUNTER = 0
-                # controller.drive(40) # voor als de kart niet naar voren wil rijden
                 controller.steer(steer)
+                controller.drive(40) # voor als de kart niet naar voren wil rijden
 
         
         if threadL.latestFrame is not None:
@@ -156,9 +156,9 @@ if __name__ == "__main__":
             break
         
         # send drive command once after there is a valid detection, to start the car moving
-        if controller is not None and (leftValid or rightValid) and not started:
-            started = True
-            controller.drive(40)
+        # if controller is not None and (leftValid or rightValid) and not started:
+        #     started = True
+        #     controller.drive(40)
         
 
     cv2.destroyAllWindows()
