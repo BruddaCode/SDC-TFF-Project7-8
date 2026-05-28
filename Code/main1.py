@@ -2,6 +2,7 @@ from line_detection.PIDController import PIDController
 from line_detection.StereoCamera import StereoCamera
 from line_detection.LineThread import LineThread
 from rijden.carcontroller import CarController
+from Object_Detection.ultra_object_detector import UltraObjectDetector
 
 from cv2_enumerate_cameras import enumerate_cameras
 import time
@@ -80,6 +81,11 @@ if __name__ == "__main__":
     started = False
     
     while True:
+
+
+
+
+
         if DEBUG:
             threadL.request_step()
             threadR.request_step()

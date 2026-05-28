@@ -103,7 +103,7 @@ SCRIPT_DIR  = Path(__file__).parent
 # MODEL_PATH  = SCRIPT_DIR / "TheNewModel" / "sdc_yolov8n3-5" / "weights" / "best.pt"
 MODEL_PATH  = SCRIPT_DIR / "TheNewModel" / "sdc_yolov8n3-5" / "weights" / "best_openvino_model"
 
-VIDEO_SOURCE = 1
+VIDEO_SOURCE = 4
 # VIDEO_SOURCE = SCRIPT_DIR / "UselessVideos" / "corne.mp4"
 OUTPUT_FILE  = SCRIPT_DIR / "UselessVideos" / "NewModelTesting2" / "NewModelMenTest.mp4"
 # Set OUTPUT_FILE = None to disable saving
@@ -199,7 +199,9 @@ def main():
     print(f"[INFO] Classes: {list(model.names.values())}")
     print(f"[INFO] Calibrated focal lengths — fx: {FX:.1f}px  fy: {FY:.1f}px")
 
-    cap = cv2.VideoCapture(VIDEO_SOURCE)
+    cap = cv2.VideoCapture(VIDEO_SOURCE, cv2.CAP_V4L2)
+
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
     cap.set(cv2.CAP_PROP_FRAME_WIDTH,  CAMERA_RESOLUTION[0])
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_RESOLUTION[1])
     if not cap.isOpened():
