@@ -2,6 +2,7 @@ from line_detection.PIDController import PIDController
 from line_detection.StereoCamera import StereoCamera
 from line_detection.LineThread import LineThread
 from rijden.carcontroller import CarController
+from Object_Detection.ultra_object_detector import UltraObjectDetector
 
 from cv2_enumerate_cameras import enumerate_cameras
 import time
@@ -33,13 +34,13 @@ if __name__ == "__main__":
     ids = getCameraId(cameraKey["cameraName"])
     names = ["left", "middle", "right"]
     # camM = StereoCamera(id=ids[1], camPos=names[1]) # voor nu niet nodig
-    # camL = StereoCamera(index=ids[1], camPos=names[0])
-    # camR = StereoCamera(index=ids[2], camPos=names[2])
-    camL = StereoCamera(videoPath="30-04-2026_verlichte_baan/left.mp4", camPos=names[0])
-    camR = StereoCamera(videoPath="30-04-2026_verlichte_baan/right.mp4", camPos=names[2])
+    camL = StereoCamera(index=ids[1], camPos=names[0])
+    camR = StereoCamera(index=ids[2], camPos=names[2])
+    # camL = StereoCamera(videoPath="30-04-2026_verlichte_baan/left.mp4", camPos=names[0])
+    # camR = StereoCamera(videoPath="30-04-2026_verlichte_baan/right.mp4", camPos=names[2])
     
-    controller = None
-    # controller = CarController()
+    # controller = None
+    controller = CarController()
     
     wL = config["LineWeight"]["left"]
     wR = config["LineWeight"]["right"]
@@ -65,7 +66,7 @@ if __name__ == "__main__":
     prevTime = time.time()
     
     COUNTER = 0
-    delay = 5
+    delay = 2
     
     # stale value tracking
     MAX_STALE_TIME = 0.5
@@ -80,6 +81,11 @@ if __name__ == "__main__":
     started = False
     
     while True:
+
+
+
+
+
         if DEBUG:
             threadL.request_step()
             threadR.request_step()
@@ -129,7 +135,8 @@ if __name__ == "__main__":
         prevTime = currTime
 
         steer = pid.compute(laneCenter, dt)
-        steer = -(int(np.clip(np.interp(steer, [-0.20, 0.20], [-100, 100]), -100, 100)))
+        pidStrenght = 0.16
+        steer = -(int(np.clip(np.interp(steer, [-pidStrenght, pidStrenght], [-100, 100]), -100, 100)))
 
         print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
         
@@ -141,7 +148,7 @@ if __name__ == "__main__":
             if COUNTER >= delay:
                 COUNTER = 0
                 controller.steer(steer)
-                controller.drive(40) # voor als de kart niet naar voren wil rijden
+                controller.drive(50) # voor als de kart niet naar voren wil rijden
 
         
         if threadL.latestFrame is not None:
