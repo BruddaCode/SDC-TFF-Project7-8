@@ -105,7 +105,7 @@ MODEL_PATH  = SCRIPT_DIR / "TheNewModel" / "sdc_yolov8n3-5" / "weights" / "best_
 
 VIDEO_SOURCE = 1
 # VIDEO_SOURCE = SCRIPT_DIR / "UselessVideos" / "corne.mp4"
-OUTPUT_FILE  = SCRIPT_DIR / "UselessVideos" / "NewModelTesting2" / "NewModelSixthTest.mp4"
+OUTPUT_FILE  = SCRIPT_DIR / "UselessVideos" / "NewModelTesting2" / "NewModelMenTest.mp4"
 # Set OUTPUT_FILE = None to disable saving
 
 CONF_THRESH       = 0.05
