@@ -17,8 +17,17 @@ class LineDetector():
         self.bumperA = bumperA
         self.bumperB = bumperB
 
-        # side is true for left and false for right, this is used to determine which side of the line is the "detection" side, and which is the "non-detection" side. This is important for the lineProgress function, as it determines how the progress is calculated based on the position of the intersection relative to the line.
+        # side is true for left and false for right
+        # this is used to determine which side of the line is the "detection" side, and which is the "non-detection" side.
+        # This is important for the lineProgress function, as it determines how the progress is calculated based on the position of the intersection relative to the line.
         self.side = side
+
+        # stale value tracking for line detection
+        self.MAX_STALE_TIME = 0.5
+        self.lastLeftHit  = None
+        self.lastRightHit = None
+        self.lastLeftTime  = 0.0
+        self.lastRightTime = 0.0
 
     def intersect(self, A, B, C, D):
         x1, y1 = A
@@ -39,13 +48,10 @@ class LineDetector():
     def lineProgress(self, intersection):
         if self.side:
             length = np.sqrt((self.bumperA[0] - intersection[0])**2 + (self.bumperA[1] - intersection[1])**2)
-            # print(f"Left side - Length from bumperA to intersection: {length}, Reference line length: {self.lengthReferenceLine}, Progress before inversion: {length / self.lengthReferenceLine}")
             return length / self.lengthReferenceLine
         else:
             length = np.sqrt((self.bumperA[0] - intersection[0])**2 + (self.bumperA[1] - intersection[1])**2)
-            # print(f"Right side - Length from bumperA to intersection: {length}, Reference line length: {self.lengthReferenceLine}, Progress before inversion: {1 - (length / self.lengthReferenceLine)}")
             return 1 - length / self.lengthReferenceLine
-
 
     def processFrame(self, frame):
                 
@@ -96,3 +102,31 @@ class LineDetector():
             return (prog, frame)
 
         return (None, frame)
+
+    def checkForHit(self, leftHit, rightHit, currTime, prevCenter):
+        # update stored values if we have fresh detections
+        if leftHit is not None:
+            self.lastLeftHit  = leftHit
+            self.lastLeftTime = currTime
+        if rightHit is not None:
+            self.lastRightHit  = rightHit
+            self.lastRightTime = currTime
+
+        # check if stored values are still within the stale timeout
+        leftValid  = self.lastLeftHit  is not None and (currTime - self.lastLeftTime)  < self.MAX_STALE_TIME
+        rightValid = self.lastRightHit is not None and (currTime - self.lastRightTime) < self.MAX_STALE_TIME
+
+        if leftValid and rightValid:
+            mode = "both"
+            laneCenter = self.lastLeftHit / (self.lastLeftHit + self.lastRightHit)
+        elif leftValid:
+            mode = "single-left"
+            laneCenter = self.lastLeftHit
+        elif rightValid:
+            mode = "single-right"
+            laneCenter = 1 - self.lastRightHit
+        else:
+            mode = "lost"
+            laneCenter = prevCenter  # hold last known center
+        
+        return mode, laneCenter

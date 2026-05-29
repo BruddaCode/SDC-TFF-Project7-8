@@ -29,6 +29,7 @@ class LineThread(threading.Thread):
         
         self.latestFrame = None
         self.latestIntersection = None
+
         self.roi = np.array([[self.roiKey["x1"], self.roiKey["y1"]], [self.roiKey["x2"], self.roiKey["y2"]], [self.roiKey["x3"], self.roiKey["y3"]], [self.roiKey["x4"], self.roiKey["y4"]]], np.int32)
         self.roiBounds = cv2.boundingRect(self.roi)
         self.A = self.toRoi((self.lineKey["A"]["x"], self.lineKey["A"]["y"]), self.roiBounds)
@@ -55,10 +56,13 @@ class LineThread(threading.Thread):
 
     def stop(self):
         # stop thread and notify any waiters and step requests
-        with self._cond:
+        if self.sync_mode:
+            with self._cond:
+                self.running = False
+                self._step_requested = True
+                self._cond.notify_all()
+        else:
             self.running = False
-            self._step_requested = True
-            self._cond.notify_all()
 
     def enable_sync_mode(self, enable=True):
         """Enable or disable step-based synchronous processing."""
@@ -101,14 +105,13 @@ class LineThread(threading.Thread):
                         break
                     # consume the step request and proceed
                     self._step_requested = False
-                    
+            
             frame = self.cam.getFrame()
             # mask the frame to only include the roi, and also get the original roi frame for later use
             originalRoiFrame, roiFrame, mask, (x, y, w, h) = self.applyRoi(frame)
 
             # get the intersection of the line with the roi, and also get the processed roi frame for later use
             intersection, roiFrame = self.detector.getIntersection(roiFrame, self.A, self.B)
-            # print(f"{self.cam.camPos} intersection: {intersection}")
             
             # create a display frame that only shows the roi, and also draw the line and the intersection on it, and then put it back on the original frame
             displayRoiFrame = originalRoiFrame.copy()
@@ -122,13 +125,15 @@ class LineThread(threading.Thread):
             cv2.line(frame, (self.lineKey["A"]["x"],self.lineKey["A"]["y"]), (self.lineKey["B"]["x"],self.lineKey["B"]["y"]), (0,0,255), 2)
         
             # update latest data and notify any waiters
-            with self._cond:
+            if self.sync_mode:
+                with self._cond:
+                    self.latestFrame = frame
+                    self.latestIntersection = intersection
+                    self.latestIndex += 1
+                    self._cond.notify_all()
+            else:
                 self.latestFrame = frame
                 self.latestIntersection = intersection
-                self.latestIndex += 1
-                self._cond.notify_all()
-           
-            self.latestFrame = frame
-            self.latestIntersection = intersection
+
             time.sleep(1/30)
         self.cam.release()
