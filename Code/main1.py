@@ -139,9 +139,7 @@ if __name__ == "__main__":
         steer = -(int(np.clip(np.interp(steer, [-pidStrenght, pidStrenght], [-100, 100]), -100, 100)))
 
         print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
-        
-        # controller.drive(40) # voor als de kart niet naar voren wil rijden
-        
+                
         # periodic steering update
         if controller is not None:
             COUNTER+=1
@@ -161,11 +159,7 @@ if __name__ == "__main__":
             threadL.stop()
             threadR.stop()
             break
-        
-        # send drive command once after there is a valid detection, to start the car moving
-        # if controller is not None and (leftValid or rightValid) and not started:
-        #     started = True
-        #     controller.drive(40)
+    
         
 
     cv2.destroyAllWindows()

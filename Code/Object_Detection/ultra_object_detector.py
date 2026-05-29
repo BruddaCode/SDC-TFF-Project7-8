@@ -10,6 +10,8 @@ import time
 import numpy as np
 from pathlib import Path
 from ultralytics.models.yolo.model import YOLO
+from line_detection.StereoCamera import StereoCamera
+import threading
 
 
 # ── Custom class colours (BGR) ────────────────────────────────────────────────
@@ -181,6 +183,32 @@ def draw_detections(frame, results, model):
     return frame, len(boxes)
 
 
+class ObjectDetector(threading.Thread):
+    def __init__(self, model_path, conf_thresh=0.05, camera=None, video_path=None):
+        super().__init__()
+        if not Path(model_path).exists():
+            raise FileNotFoundError(f"Model not found: {model_path}")
+        print(f"[INFO] Loading model from: {model_path}")
+        self.model = YOLO(str(model_path))
+        print(f"[INFO] Classes: {list(self.model.names.values())}")
+        
+        self.conf_thresh = conf_thresh
+        
+        if video_path is not None:
+            self.cap = cv2.VideoCapture(video_path)
+            print(f"[INFO] Video {video_path} initialized.")
+        elif camera is not None:
+            self.cam = camera
+            print(f"[INFO] Camera initialized.")
+        else:
+            raise ValueError("Either camera or video_path must be provided.")
+    
+    def object_detector(self, frame):
+        frame = undistort_frame(frame)
+        results = self.model(frame, conf=self.conf_thresh, verbose=False, task="detect")
+        result, n_det = draw_detections(frame.copy(), results, self.model)
+        return result, n_det
+
 def main():
     if not MODEL_PATH.exists():
         raise FileNotFoundError(f"Model not found: {MODEL_PATH}")
@@ -279,5 +307,5 @@ def main():
         print(f"[INFO] Processed {frame_count} frames | Avg FPS: {fps_accum / frame_count:.1f}")
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
