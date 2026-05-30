@@ -10,8 +10,6 @@ import time
 import numpy as np
 from pathlib import Path
 from ultralytics.models.yolo.model import YOLO
-from line_detection.StereoCamera import StereoCamera
-import threading
 
 
 # ── Custom class colours (BGR) ────────────────────────────────────────────────
@@ -105,9 +103,10 @@ SCRIPT_DIR  = Path(__file__).parent
 # MODEL_PATH  = SCRIPT_DIR / "TheNewModel" / "sdc_yolov8n3-5" / "weights" / "best.pt"
 MODEL_PATH  = SCRIPT_DIR / "TheNewModel" / "sdc_yolov8n3-5" / "weights" / "best_openvino_model"
 
-VIDEO_SOURCE = 4
+# VIDEO_SOURCE = 4
 # VIDEO_SOURCE = SCRIPT_DIR / "UselessVideos" / "corne.mp4"
-OUTPUT_FILE  = SCRIPT_DIR / "UselessVideos" / "NewModelTesting2" / "NewModelMenTest.mp4"
+VIDEO_SOURCE = SCRIPT_DIR / "middle.mp4"
+OUTPUT_FILE  = SCRIPT_DIR / "UselessVideos" / "NewModelTesting2" / "NewModelShittingMyselfTest.mp4"
 # Set OUTPUT_FILE = None to disable saving
 
 CONF_THRESH       = 0.05
@@ -183,32 +182,6 @@ def draw_detections(frame, results, model):
     return frame, len(boxes)
 
 
-class ObjectDetector(threading.Thread):
-    def __init__(self, model_path, conf_thresh=0.05, camera=None, video_path=None):
-        super().__init__()
-        if not Path(model_path).exists():
-            raise FileNotFoundError(f"Model not found: {model_path}")
-        print(f"[INFO] Loading model from: {model_path}")
-        self.model = YOLO(str(model_path))
-        print(f"[INFO] Classes: {list(self.model.names.values())}")
-        
-        self.conf_thresh = conf_thresh
-        
-        if video_path is not None:
-            self.cap = cv2.VideoCapture(video_path)
-            print(f"[INFO] Video {video_path} initialized.")
-        elif camera is not None:
-            self.cam = camera
-            print(f"[INFO] Camera initialized.")
-        else:
-            raise ValueError("Either camera or video_path must be provided.")
-    
-    def object_detector(self, frame):
-        frame = undistort_frame(frame)
-        results = self.model(frame, conf=self.conf_thresh, verbose=False, task="detect")
-        result, n_det = draw_detections(frame.copy(), results, self.model)
-        return result, n_det
-
 def main():
     if not MODEL_PATH.exists():
         raise FileNotFoundError(f"Model not found: {MODEL_PATH}")
@@ -227,22 +200,21 @@ def main():
     print(f"[INFO] Classes: {list(model.names.values())}")
     print(f"[INFO] Calibrated focal lengths — fx: {FX:.1f}px  fy: {FY:.1f}px")
 
-    cap = cv2.VideoCapture(VIDEO_SOURCE, cv2.CAP_V4L2)
+    if is_camera:
+        cap = cv2.VideoCapture(VIDEO_SOURCE, cv2.CAP_V4L2)
+    else:
+        cap = cv2.VideoCapture(str(VIDEO_SOURCE))
 
-    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH,  CAMERA_RESOLUTION[0])
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_RESOLUTION[1])
+    if is_camera:
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH,  CAMERA_RESOLUTION[0])
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_RESOLUTION[1])
     if not cap.isOpened():
         raise RuntimeError(f"Cannot open source: {source_label}")
 
     src_fps      = cap.get(cv2.CAP_PROP_FPS) or 30
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) if not is_camera else -1
-
-    # Build undistort maps at actual capture resolution
-    actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    build_undistort_map(actual_w, actual_h)
-    print(f"[INFO] Undistort map built for {actual_w}×{actual_h}")
+    display_delay = max(1, int(1000 / src_fps)) if not is_camera else 1
 
     if is_camera:
         print(f"[INFO] Source: {source_label}")
@@ -256,14 +228,23 @@ def main():
     frame_count = 0
     fps_accum   = 0.0
 
+    cv2.namedWindow(f"Live Feed — {source_label}", cv2.WINDOW_NORMAL)
+    cv2.namedWindow(f"Object Detector — {source_label}  [q to quit]", cv2.WINDOW_NORMAL)
+
     try:
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
                 break
 
+            if _UNDISTORT_MAP is None:
+                actual_h, actual_w = frame.shape[:2]
+                build_undistort_map(actual_w, actual_h)
+                print(f"[INFO] Undistort map built for {actual_w}×{actual_h}")
+
             # Apply lens distortion correction using calibration data
             frame = undistort_frame(frame)
+            cv2.imshow(f"Live Feed — {source_label}", frame)
 
             t0      = time.perf_counter()
             results = model(frame, conf=CONF_THRESH, verbose=False, task="detect")
@@ -286,7 +267,7 @@ def main():
                 writer.write(result)
 
             cv2.imshow(f"Object Detector — {source_label}  [q to quit]", result)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
+            if cv2.waitKey(display_delay) & 0xFF == ord("q"):
                 print("[INFO] Quit key pressed.")
                 break
 
@@ -307,5 +288,5 @@ def main():
         print(f"[INFO] Processed {frame_count} frames | Avg FPS: {fps_accum / frame_count:.1f}")
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
