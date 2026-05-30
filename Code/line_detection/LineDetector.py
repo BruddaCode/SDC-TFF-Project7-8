@@ -48,7 +48,17 @@ class LineDetector():
         px = ((x1*y2 - y1*x2)*(x3-x4) - (x1-x2)*(x3*y4 - y3*x4)) / denom
         py = ((x1*y2 - y1*x2)*(y3-y4) - (y1-y2)*(x3*y4 - y3*x4)) / denom
 
+        if not self.within_segment(px, py, A, B) or not self.within_segment(px, py, C, D):
+            return None
+
         return (int(px), int(py))
+    
+    def within_segment(self, px, py, P, Q, epsilon=1.0):
+        min_x = min(P[0], Q[0]) - epsilon
+        max_x = max(P[0], Q[0]) + epsilon
+        min_y = min(P[1], Q[1]) - epsilon
+        max_y = max(P[1], Q[1]) + epsilon
+        return min_x <= px <= max_x and min_y <= py <= max_y
     
     def lineProgress(self, intersection):
         if self.side:
