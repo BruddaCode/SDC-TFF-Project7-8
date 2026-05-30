@@ -17,9 +17,14 @@ class LineDetector():
         self.bumperA = bumperA
         self.bumperB = bumperB
 
+        self.clahe = cv2.createCLAHE(
+            clipLimit=self.claheKey["clipLimit"],
+            tileGridSize=(self.claheKey["tileGridSize"], self.claheKey["tileGridSize"]),
+        )
+        self.filterKernel = np.array([[10, 5, 10], [5, 10, 5], [10, 5, 10]])
+
         # side is true for left and false for right
-        # this is used to determine which side of the line is the "detection" side, and which is the "non-detection" side.
-        # This is important for the lineProgress function, as it determines how the progress is calculated based on the position of the intersection relative to the line.
+        # this is used to correctly calculate progress along the line
         self.side = side
 
         # stale value tracking for line detection
@@ -58,7 +63,7 @@ class LineDetector():
         # convert to hls and apply CLAHE to the lightness channel
         hls = cv2.cvtColor(frame, cv2.COLOR_BGR2HLS)
         h, l, s = cv2.split(hls)
-        l = cv2.createCLAHE(clipLimit=self.claheKey["clipLimit"], tileGridSize=(self.claheKey["tileGridSize"], self.claheKey["tileGridSize"])).apply(l)
+        l = self.clahe.apply(l)
         hls = cv2.merge((h, l, s))
         frame = cv2.inRange(hls, (self.mergeRangeKey["lower"][0], self.mergeRangeKey["lower"][1], self.mergeRangeKey["lower"][2]), (self.mergeRangeKey["upper"][0], self.mergeRangeKey["upper"][1], self.mergeRangeKey["upper"][2]))
         frame = cv2.bitwise_and(l, l, mask=frame)
@@ -69,7 +74,7 @@ class LineDetector():
         # apply Canny edge detection
         frame = cv2.Canny(frame, self.cannyKey["threshold1"], self.cannyKey["threshold2"], self.cannyKey["apertureSize"])
         
-        frame = cv2.filter2D(frame, -1, np.array([[10, 5, 10],[5, 10, 5],[10, 5, 10]]))
+        frame = cv2.filter2D(frame, -1, self.filterKernel)
         
         return frame
     
