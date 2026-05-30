@@ -28,7 +28,7 @@ lineDetectionEnabled = True
 if __name__ == "__main__":
 
     if DEBUG:
-        videoPath = "bordentest"
+        videoPath = "2026-05-28_beelden_onderbrokenlijn"
         camM = StereoCamera(videoPath=f"{videoPath}/middle.mp4", camPos="middle")
         camL = StereoCamera(videoPath=f"{videoPath}/left.mp4", camPos="left")
         camR = StereoCamera(videoPath=f"{videoPath}/right.mp4", camPos="right")
@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
         # --------------------- object detection -------------------------
         detections = threadM.latestDetections
-        # print(f"Detections: {detections}")
+        print(f"Detections: {detections}")
 
         if detections is not None:
             for det in detections:
@@ -117,7 +117,7 @@ if __name__ == "__main__":
         steer = pid.compute(laneCenter, dt)
         steer = -(round((np.clip(np.interp(steer, [-PID_STRENGTH, PID_STRENGTH], [-100, 100]), -100, 100)), 2))
 
-        # print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
+        print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
                 
         # periodic steering update
         # if controller is not None:
