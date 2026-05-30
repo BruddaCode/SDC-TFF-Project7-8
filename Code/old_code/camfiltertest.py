@@ -9,7 +9,7 @@ import time
 import json
 
 # SOURCE_FOLDER = "30-04-2026_beelden_Corne"
-SOURCE_FOLDER = "30-04-2026_beelden_Tom"
+SOURCE_FOLDER = "../30-04-2026_verlichte_baan"
 # SOURCE_FOLDER = "2026-04-02-test3-720"
 
 SOURCE_L = f"{SOURCE_FOLDER}/left.mp4"
