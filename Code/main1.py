@@ -87,7 +87,7 @@ if __name__ == "__main__":
                         # controller.drive(30)
                 # else:
                     # lineDetectionEnabled = True
-                    
+
         # ----------------------------------------------------------------
 
         # ---------------------- line detection --------------------------
@@ -127,7 +127,6 @@ if __name__ == "__main__":
         #         controller.steer(steer)
         #         controller.drive(KART_SPEED)
 
-        print("line detection enabled:", lineDetectionEnabled)
         if controller is not None and lineDetectionEnabled:
             controller.steer(steer)
             controller.drive(KART_SPEED)
