@@ -21,6 +21,12 @@ KART_SPEED = 50
 counter = 0
 delay = 2
 
+# broken line tracking
+BROKEN_LINE_LEFT = False
+BROKEN_LINE_RIGHT = False
+lastMode = None
+modes = []
+
 # stale value tracking for line detection
 PID_STRENGTH = 0.16
 lineDetectionEnabled = True
@@ -29,12 +35,12 @@ if __name__ == "__main__":
 
     if DEBUG:
         videoPath = "2026-05-28_beelden_onderbrokenlijn"
-        camM = StereoCamera(videoPath=f"{videoPath}/middle.mp4", camPos="middle")
+        # camM = StereoCamera(videoPath=f"{videoPath}/middle.mp4", camPos="middle")
         camL = StereoCamera(videoPath=f"{videoPath}/left.mp4", camPos="left")
         camR = StereoCamera(videoPath=f"{videoPath}/right.mp4", camPos="right")
     else:
         ids = StereoCamera.getCameraId()
-        camM = StereoCamera(index=ids[0], camPos="middle")
+        # camM = StereoCamera(index=ids[0], camPos="middle")
         camL = StereoCamera(index=ids[1], camPos="left")
         camR = StereoCamera(index=ids[2], camPos="right")
     
@@ -44,7 +50,7 @@ if __name__ == "__main__":
 
     threadL = LineThread(camL)
     threadR = LineThread(camR)
-    threadM = ObjectDetector(camM)
+    # threadM = ObjectDetector(camM)
 
     pid = PIDController()
     
@@ -57,36 +63,36 @@ if __name__ == "__main__":
     
     threadL.start()
     threadR.start()    
-    threadM.start()
+    # threadM.start()
     prevCenter = pid.setpoint
     prevTime = time.time()
     
     while True:
 
         # --------------------- object detection -------------------------
-        detections = threadM.latestDetections
-        print(f"Detections: {detections}")
+        # detections = threadM.latestDetections
+        # print(f"Detections: {detections}")
 
-        if detections is not None:
-            for det in detections:
-                label = det[0]
-                distance = det[1]
+        # if detections is not None:
+        #     for det in detections:
+        #         label = det[0]
+        #         distance = det[1]
 
-                if label == "traffic-light-green":
-                    print(f"Green light detected at {distance}m")
+        #         if label == "traffic-light-green":
+        #             print(f"Green light detected at {distance}m")
 
-                if label == "traffic-light-red" and distance is not None and distance < 5.0:
-                    print(f"Red light detected at {distance}m, stopping kart")
-                    # if controller is not None:
-                        # controller.drive(0)
+        #         if label == "traffic-light-red" and distance is not None and distance < 5.0:
+        #             print(f"Red light detected at {distance}m, stopping kart")
+        #             # if controller is not None:
+        #                 # controller.drive(0)
                 
-                if label == "zebra-crossing" and distance is not None and distance < 5.0:
-                    print(f"Zebra crossing detected at {distance}m, slowing down")
-                    # lineDetectionEnabled = False
-                    # if controller is not None:
-                        # controller.drive(30)
-                # else:
-                    # lineDetectionEnabled = True
+        #         if label == "zebra-crossing" and distance is not None and distance < 5.0:
+        #             print(f"Zebra crossing detected at {distance}m, slowing down")
+        #             # lineDetectionEnabled = False
+        #             # if controller is not None:
+        #                 # controller.drive(30)
+        #         # else:
+        #             # lineDetectionEnabled = True
 
         # ----------------------------------------------------------------
 
@@ -117,8 +123,28 @@ if __name__ == "__main__":
         steer = pid.compute(laneCenter, dt)
         steer = -(round((np.clip(np.interp(steer, [-PID_STRENGTH, PID_STRENGTH], [-100, 100]), -100, 100)), 2))
 
-        print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
-                
+        # print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
+
+        
+        if mode == "both":
+            modes.append("both")
+
+        if (mode == "single-left" and lastMode == "single-left"):
+            modes = []
+            BROKEN_LINE_RIGHT = True
+        
+        if (mode == "single-right" and lastMode == "single-right"):
+            modes = []
+            BROKEN_LINE_LEFT = True
+        
+        if len(modes) >= 20:
+            BROKEN_LINE_LEFT = False
+            BROKEN_LINE_RIGHT = False
+            modes = []
+
+        lastMode = mode
+
+        print(f"Mode: {mode:12s} | brokenL: {BROKEN_LINE_LEFT} | brokenR: {BROKEN_LINE_RIGHT}", flush=True)
         # periodic steering update
         # if controller is not None:
         #     counter+=1
@@ -140,13 +166,13 @@ if __name__ == "__main__":
         if threadR.latestFrame is not None:
             cv2.imshow("right", threadR.latestFrame)
 
-        if threadM.latestFrame is not None:
-            cv2.imshow("middle", threadM.latestFrame)
+        # if threadM.latestFrame is not None:
+        #     cv2.imshow("middle", threadM.latestFrame)
 
         if cv2.waitKey(30) & 0xFF == ord('q'):
             threadL.stop()
             threadR.stop()
-            threadM.stop()
+            # threadM.stop()
             break
     
         

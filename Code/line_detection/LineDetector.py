@@ -28,7 +28,7 @@ class LineDetector():
         self.side = side
 
         # stale value tracking for line detection
-        self.MAX_STALE_TIME = 0.5
+        self.MAX_STALE_TIME = 0.4
         self.lastLeftHit  = None
         self.lastRightHit = None
         self.lastLeftTime  = 0.0
