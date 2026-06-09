@@ -16,6 +16,7 @@ DEBUG = 1
 # turn controller on or off
 CONTROLLER_ENABLED = 0
 KART_SPEED = 50
+currentAngle = 0
 
 # canbus send msg delay
 counter = 0
@@ -28,7 +29,7 @@ lineDetectionEnabled = True
 if __name__ == "__main__":
 
     if DEBUG:
-        videoPath = "2026-05-28_beelden_onderbrokenlijn"
+        videoPath = "Object_Detection"
         camM = StereoCamera(videoPath=f"{videoPath}/middle.mp4", camPos="middle")
         camL = StereoCamera(videoPath=f"{videoPath}/left.mp4", camPos="left")
         camR = StereoCamera(videoPath=f"{videoPath}/right.mp4", camPos="right")
@@ -64,29 +65,133 @@ if __name__ == "__main__":
     while True:
 
         # --------------------- object detection -------------------------
+        # for object detection, the things that still need changing are:
+        # - the distance thresholds for each object (currently 5m for everything, but should be different for each object) -> 3m?
+        # - the actions taken for each object (currently just print statements, but should be actually controlling the kart)
+            # - Zebrapad + Persoon = stop (<= 3m), Zebrapad + !Persoon = slow down (not stop) -> px Person >= 961 px == Right side, px Person <= 959 px == Left side, compare with Zebrapad pixels
+            # - Verkeerslicht groen = doorrijden, verkeerslicht rood = stoppen
+            # - One way left/sign left only = voorbereiden op linksaf slaan (misschien al eerder, afhankelijk van afstand)
+            # - Stop sign = <= 3m stoppen 
+            # - Speed sign 20/30, in principe snelheid aanpassen, maar denk niet dat we zo snel uberhaupt gaan, dus negeren? (low priority)
+            # - Person (on its own) = negeren, tenzij zo dichtbij dat practisch aangereden (low priority) 
+            # - Stop light off = negeren, tenzij zo dichtbij dat practisch aangereden (low priority)
+        # - when persons are detected (and "zebrapad") from right to left walk, or wait, for a specified amount of time (10seconds? or so) -> vorige groep deed op basis van frames... wisselvallig, denk t is beter om te hardcoden
+        # - prioritieten stellen (zelfmoord of niet zelfmoord) -> else ifs, met afstand geimplementeerd, zodat dingen niet genegeerd worden.
+
+        oneWayLeft = None
+        stopSign = None
+        StopSignFlag = False
+        signLeftOnly = None
+        redLight = None
+        greenLight = None
+        person = None
+        zebraCrossing = None
+        car = None
+        speedSign20 = None
+        speedSign30 = None
+        SpeedSignFlag = False
+
         detections = threadM.latestDetections
         print(f"Detections: {detections}")
 
         if detections is not None:
             for det in detections:
-                label = det[0]
-                distance = det[1]
+                turn_start_time = None
+                TURN_DURATION = 2.0  # TODO: tune this
+                DELAY_DURATION = 3.0 # time to wait at stop sign, can be tuned
 
-                if label == "traffic-light-green":
-                    print(f"Green light detected at {distance}m")
+                match det[0]:
+                    case "one-way-left":
+                        oneWayLeft = det
+                    case "stop-sign":
+                        stopSign = det
+                    case "sign-left-only":
+                        signLeftOnly = det  
+                    case "traffic-light-red":
+                        redLight = det
+                    case "traffic-light-green":
+                        greenLight = det
+                    case "person":
+                        person = det
+                    case "zebra-crossing":
+                        zebraCrossing = det
+                    case "car":
+                        car = det
+                    case "speed-sign-20":
+                        speedSign20 = det
+                    case "speed-sign-30":
+                        speedSign30 = det
 
-                if label == "traffic-light-red" and distance is not None and distance < 5.0:
-                    print(f"Red light detected at {distance}m, stopping kart")
-                    # if controller is not None:
-                        # controller.drive(0)
-                
-                if label == "zebra-crossing" and distance is not None and distance < 5.0:
-                    print(f"Zebra crossing detected at {distance}m, slowing down")
-                    # lineDetectionEnabled = False
-                    # if controller is not None:
-                        # controller.drive(30)
-                # else:
-                    # lineDetectionEnabled = True
+        if stopSign and stopSign[1] < 3.0:
+            print(f"Stop sign detected at {stopSign[1]}m, stopping kart")
+            if controller is not None:
+                if StopSignFlag == False:
+                    controller.drive(0)
+                    controller.brake(100)
+                    StopSignFlag = True
+                    delay(DELAY_DURATION * 1000) # wait for 3 seconds, can be tuned
+                else:
+                    print("Already stopped for stop sign, ignoring")
+                    controller.brake(0)
+                    controller.drive(KART_SPEED)
+        else:
+            StopSignFlag = False    
+
+        if greenLight and greenLight[1] < 3.0: 
+            print(f"Green light detected at {greenLight[1]}m, go go go!")
+            if controller is not None:
+                controller.drive(KART_SPEED)
+
+        elif redLight and redLight[1] < 3.0:
+            print(f"Red light detected at {redLight[1]}m, stopping kart")
+            if controller is not None:
+                controller.drive(0)
+                controller.brake(100)
+        
+        if zebraCrossing and zebraCrossing[1] < 5.0:
+            if person and person[1] < 5.0: 
+                print(f"Person detected on zebra crossing at {person[1]}m, stopping kart, at {person[2]}px")
+                if controller is not None:
+                    controller.drive(0)
+                    controller.brake(100)
+            else:
+                print(f"Zebra crossing detected at {zebraCrossing[1]}m, slowing down")
+                if controller is not None:
+                    controller.drive(KART_SPEED // 2)
+            # lineDetectionEnabled = False
+            # if controller is not None:
+                # controller.drive(30)
+            # else:
+                # lineDetectionEnabled = True
+
+        # elif det[0] == "person" and det[1] is not None and det[1] < 5.0:
+        #     if det[2] >= 961: # person on right side, so walking from right to left
+        #         print(f"Person detected on the right at {det[1]}m, waiting for them to cross")
+        #         if controller is not None:
+        #             controller.drive(0)
+        #             time.sleep(5)  # wait for 5 seconds, can be tuned
+        #             controller.drive(KART_SPEED)
+
+        if signLeftOnly or oneWayLeft and signLeftOnly[1] < 5.0 or oneWayLeft[1] < 5.0: # TODO: tune distance threshold
+            if turn_start_time is None:  # Only trigger once
+                print(f"{det[0]} at {det[1]}m, preparing to turn left")
+                turn_start_time = time.time()
+                if controller is not None:
+                    currentAngle = -50
+                    lineDetectionEnabled = False
+                    controller.steer(currentAngle)
+                    controller.drive(KART_SPEED)
+
+        if turn_start_time is not None and time.time() - turn_start_time >= TURN_DURATION:
+            print("Turn complete, re-enabling line detection")
+            turn_start_time = None
+            if controller is not None:
+                currentAngle = 0
+                lineDetectionEnabled = True
+        elif currentAngle != 0:
+            controller.steer(currentAngle)  # Maintain turn angle until turn is complete
+            controller.drive(KART_SPEED)
+
 
         # ----------------------------------------------------------------
 
@@ -153,4 +258,4 @@ if __name__ == "__main__":
 
     cv2.destroyAllWindows()
     if controller is not None:
-        controller.turnOffBus()
+        controller.turnOffBus()#

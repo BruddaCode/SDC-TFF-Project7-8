@@ -4,7 +4,7 @@ import threading
 import time
 import json
 import cv2
-import os
+import os  
 
 class ObjectDetector(threading.Thread):
     def __init__(self, cam):
@@ -72,6 +72,9 @@ class ObjectDetector(threading.Thread):
         x1, y1 = bboxPoints[0]
         x2, y2 = bboxPoints[1]
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+
+        boundingBoxMiddle = ( x1 + x2 ) / 2
+        cv2.circle(frame, (int(boundingBoxMiddle), y1), 5, (255, 0, 255), -1)
         
         labelText = f"{label}, {confidence:.2f}"
         (textWidth, textHeight), _ = cv2.getTextSize(labelText, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
@@ -99,10 +102,11 @@ class ObjectDetector(threading.Thread):
             color = self.classColors.get(label, self.classColors["default"])
             boundingBoxWidth = x2 - x1
             boundingBoxHeight = y2 - y1
+            boundingBoxMiddle = ( x1 + x2 ) / 2
 
             distance = self.estimateDistance((boundingBoxWidth, boundingBoxHeight), label)
             drawnFrame = self.drawDetection(drawnFrame, bboxPoints, label, color, distance, conf)
-            detectionsList.append((label, distance))
+            detectionsList.append((label, distance, boundingBoxMiddle))
         return drawnFrame, detectionsList
 
     def stop(self):
