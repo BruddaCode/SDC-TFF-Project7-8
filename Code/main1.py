@@ -107,8 +107,6 @@ if __name__ == "__main__":
 
         if detections is not None:
             for det in detections:
-                
-
                 match det[0]:
                     case "one-way-left":
                         oneWayLeft = det
@@ -132,46 +130,58 @@ if __name__ == "__main__":
                         speedSign30 = det
 
         if stopSign:
-            if stopSign[1] < 3.0:
-                print(f"Stop sign detected at {stopSign[1]}m, stopping kart")
-                if controller is not None:
-                    if StopSignFlag == False:
-                        controller.drive(0)
-                        controller.brake(100)
-                        StopSignFlag = True
-                        delay(DELAY_DURATION * 1000) # wait for 3 seconds, can be tuned
-                    else:
-                        print("Already stopped for stop sign, ignoring")
-                        controller.brake(0)
-                        controller.drive(KART_SPEED)
+            try:
+                if stopSign[1] < 3.0:
+                    print(f"Stop sign detected at {stopSign[1]}m, stopping kart")
+                    if controller is not None:
+                        if StopSignFlag == False:
+                            controller.drive(0)
+                            controller.brake(100)
+                            StopSignFlag = True
+                            delay(DELAY_DURATION * 1000) # wait for 3 seconds, can be tuned
+                        else:
+                            print("Already stopped for stop sign, ignoring")
+                            controller.brake(0)
+                            controller.drive(KART_SPEED)
+            except Exception as e:
+                print(f"Error getting distance for stop sign: {e}")
         else:
             StopSignFlag = False    
 
         if greenLight:
-            if greenLight[1] < 3.0: 
-                print(f"Green light detected at {greenLight[1]}m, go go go!")
-                if controller is not None:
-                    controller.drive(KART_SPEED)
+            try:
+                if greenLight[1] < 3.0: 
+                    print(f"Green light detected at {greenLight[1]}m, go go go!")
+                    if controller is not None:
+                        controller.drive(KART_SPEED)
+            except Exception as e:
+                print(f"Error getting distance for green light: {e}")
 
         elif redLight:
-            if redLight[1] < 3.0:
-                print(f"Red light detected at {redLight[1]}m, stopping kart")
-                if controller is not None:
-                    controller.drive(0)
-                    controller.brake(100)
-        
-        if zebraCrossing: 
-            if zebraCrossing[1] < 5.0:
-                lineDetectionEnabled = False
-                if person and person[1] < 5.0: 
-                    print(f"Person detected on zebra crossing at {person[1]}m, stopping kart, at {person[2]}px")
+            try:
+                if redLight[1] < 3.0:
+                    print(f"Red light detected at {redLight[1]}m, stopping kart")
                     if controller is not None:
                         controller.drive(0)
                         controller.brake(100)
-                else:
-                    print(f"Zebra crossing detected at {zebraCrossing[1]}m, slowing down")
-                    if controller is not None:
-                        controller.drive(KART_SPEED // 2)
+            except Exception as e:
+                print(f"Error getting distance for red light: {e}")
+
+        if zebraCrossing: 
+            try:
+                if zebraCrossing[1] < 5.0:
+                    lineDetectionEnabled = False
+                    if person and person[1] < 5.0: 
+                        print(f"Person detected on zebra crossing at {person[1]}m, stopping kart, at {person[2]}px")
+                        if controller is not None:
+                            controller.drive(0)
+                            controller.brake(100)
+                    else:
+                        print(f"Zebra crossing detected at {zebraCrossing[1]}m, slowing down")
+                        if controller is not None:
+                            controller.drive(KART_SPEED // 2)
+            except Exception as e:
+                print(f"Error getting distance for zebra crossing: {e}")
         else:
             lineDetectionEnabled = True
             # controller.drive(KART_SPEED)
@@ -185,15 +195,18 @@ if __name__ == "__main__":
         #             controller.drive(KART_SPEED)
 
         if signLeftOnly or oneWayLeft:
-            if signLeftOnly[1] < 5.0 or oneWayLeft[1] < 5.0: # TODO: tune distance threshold
-                if turn_start_time is None:  # Only trigger once
-                    print(f"{det[0]} at {det[1]}m, preparing to turn left")
-                    turn_start_time = time.time()
-                    if controller is not None:
-                        currentAngle = -50
-                        lineDetectionEnabled = False
-                        controller.steer(currentAngle)
-                        controller.drive(KART_SPEED)
+            try:
+                if signLeftOnly[1] < 5.0 or oneWayLeft[1] < 5.0: # TODO: tune distance threshold
+                    if turn_start_time is None:  # Only trigger once
+                        print(f"{det[0]} at {det[1]}m, preparing to turn left")
+                        turn_start_time = time.time()
+                        if controller is not None:
+                            currentAngle = -50
+                            lineDetectionEnabled = False
+                            controller.steer(currentAngle)
+                            controller.drive(KART_SPEED)
+            except Exception as e:
+                print(f"Error getting distance for left turn sign: {e}")
 
         if turn_start_time is not None and time.time() - turn_start_time >= TURN_DURATION:
             print("Turn complete, re-enabling line detection")
