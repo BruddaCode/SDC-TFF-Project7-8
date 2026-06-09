@@ -32,6 +32,11 @@ modes = []
 PID_STRENGTH = 0.16
 lineDetectionEnabled = True
 
+# turn tracking
+turn_start_time = None
+TURN_DURATION = 2.0  # TODO: tune this
+DELAY_DURATION = 3.0 # time to wait at stop sign, can be tuned
+
 if __name__ == "__main__":
 
     if DEBUG:
@@ -102,9 +107,7 @@ if __name__ == "__main__":
 
         if detections is not None:
             for det in detections:
-                turn_start_time = None
-                TURN_DURATION = 2.0  # TODO: tune this
-                DELAY_DURATION = 3.0 # time to wait at stop sign, can be tuned
+                
 
                 match det[0]:
                     case "one-way-left":
