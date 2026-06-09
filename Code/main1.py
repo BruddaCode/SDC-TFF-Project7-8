@@ -207,6 +207,16 @@ if __name__ == "__main__":
                             controller.drive(KART_SPEED)
             except Exception as e:
                 print(f"Error getting distance for left turn sign: {e}")
+                
+        if car:
+            try:
+                if car[1] < 4.0:
+                    print(f"Car detected at {car[1]}m, slowing down")
+                    if controller is not None:
+                        controller.drive(0)
+                        controller.brake(100)  # apply moderate brake, can be tuned
+            except Exception as e:
+                print(f"Error getting distance for car: {e}")
 
         if turn_start_time is not None and time.time() - turn_start_time >= TURN_DURATION:
             print("Turn complete, re-enabling line detection")
