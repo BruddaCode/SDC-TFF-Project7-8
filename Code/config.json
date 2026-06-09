@@ -54,7 +54,20 @@
         "fps": 30,
         "width": 1280,
         "height": 720,
-        "autoFocus": 0
+        "autoFocus": 0,
+        "intrinsicMatrix": {
+            "fx": 1425.76401,
+            "fy": 1420.99141,
+            "cx": 948.147834,
+            "cy": 591.695278
+        },
+        "distCoeffs": {
+            "k1": 0.0284335,
+            "k2": -0.15193021,
+            "p1": 0.00601368,
+            "p2": 0.00274577,
+            "k3": 0.13006665
+        }
     },
     "FilterSettings": {
         "Clahe": {
@@ -82,5 +95,35 @@
             "minLineLength": 90,
             "maxLineGap": 120
         }
+    },
+    "ObjectDetection": {
+        "ClassColors": {
+            "car":                  [200, 100, 0],
+            "one-way-left":         [255, 200, 0],
+            "sign-left-only":       [255, 150, 0],
+            "speed-sign-20":        [0, 200, 255],
+            "speed-sign-30":        [0, 150, 255],
+            "stop-sign":            [0, 0, 220],
+            "traffic-light-green":  [0, 200, 0],
+            "traffic-light-red":    [0, 0, 255],
+            "traffic-light-off":    [100, 100, 100],
+            "zebra-crossing":       [255, 255, 0],
+            "person":               [50, 200, 50],
+            "default":              [200, 200, 200]
+        },
+        "ObjectRealSize": {
+            "car":                  [1.80, false],
+            "one-way-left":         [0.45, false],
+            "sign-left-only":       [0.45, false],
+            "speed-sign-20":        [0.40, false],
+            "speed-sign-30":        [0.40, false],
+            "stop-sign":            [0.60, false],
+            "traffic-light-green":  [0.25, true],
+            "traffic-light-red":    [0.25, true],
+            "traffic-light-off":    [0.25, true],
+            "zebra-crossing":       [3.00, false],
+            "person":               [1.75, true]
+        },
+        "confidenceThreshold": 0.1
     }
 }

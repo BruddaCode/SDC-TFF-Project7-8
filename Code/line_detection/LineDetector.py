@@ -17,8 +17,22 @@ class LineDetector():
         self.bumperA = bumperA
         self.bumperB = bumperB
 
-        # side is true for left and false for right, this is used to determine which side of the line is the "detection" side, and which is the "non-detection" side. This is important for the lineProgress function, as it determines how the progress is calculated based on the position of the intersection relative to the line.
+        self.clahe = cv2.createCLAHE(
+            clipLimit=self.claheKey["clipLimit"],
+            tileGridSize=(self.claheKey["tileGridSize"], self.claheKey["tileGridSize"]),
+        )
+        self.filterKernel = np.array([[10, 5, 10], [5, 10, 5], [10, 5, 10]])
+
+        # side is true for left and false for right
+        # this is used to correctly calculate progress along the line
         self.side = side
+
+        # stale value tracking for line detection
+        self.MAX_STALE_TIME = 0.4
+        self.lastLeftHit  = None
+        self.lastRightHit = None
+        self.lastLeftTime  = 0.0
+        self.lastRightTime = 0.0
 
     def intersect(self, A, B, C, D):
         x1, y1 = A
@@ -34,25 +48,32 @@ class LineDetector():
         px = ((x1*y2 - y1*x2)*(x3-x4) - (x1-x2)*(x3*y4 - y3*x4)) / denom
         py = ((x1*y2 - y1*x2)*(y3-y4) - (y1-y2)*(x3*y4 - y3*x4)) / denom
 
+        if not self.within_segment(px, py, A, B) or not self.within_segment(px, py, C, D):
+            return None
+
         return (int(px), int(py))
+    
+    def within_segment(self, px, py, P, Q, epsilon=1.0):
+        min_x = min(P[0], Q[0]) - epsilon
+        max_x = max(P[0], Q[0]) + epsilon
+        min_y = min(P[1], Q[1]) - epsilon
+        max_y = max(P[1], Q[1]) + epsilon
+        return min_x <= px <= max_x and min_y <= py <= max_y
     
     def lineProgress(self, intersection):
         if self.side:
             length = np.sqrt((self.bumperA[0] - intersection[0])**2 + (self.bumperA[1] - intersection[1])**2)
-            # print(f"Left side - Length from bumperA to intersection: {length}, Reference line length: {self.lengthReferenceLine}, Progress before inversion: {length / self.lengthReferenceLine}")
             return length / self.lengthReferenceLine
         else:
             length = np.sqrt((self.bumperA[0] - intersection[0])**2 + (self.bumperA[1] - intersection[1])**2)
-            # print(f"Right side - Length from bumperA to intersection: {length}, Reference line length: {self.lengthReferenceLine}, Progress before inversion: {1 - (length / self.lengthReferenceLine)}")
             return 1 - length / self.lengthReferenceLine
-
 
     def processFrame(self, frame):
                 
         # convert to hls and apply CLAHE to the lightness channel
         hls = cv2.cvtColor(frame, cv2.COLOR_BGR2HLS)
         h, l, s = cv2.split(hls)
-        l = cv2.createCLAHE(clipLimit=self.claheKey["clipLimit"], tileGridSize=(self.claheKey["tileGridSize"], self.claheKey["tileGridSize"])).apply(l)
+        l = self.clahe.apply(l)
         hls = cv2.merge((h, l, s))
         frame = cv2.inRange(hls, (self.mergeRangeKey["lower"][0], self.mergeRangeKey["lower"][1], self.mergeRangeKey["lower"][2]), (self.mergeRangeKey["upper"][0], self.mergeRangeKey["upper"][1], self.mergeRangeKey["upper"][2]))
         frame = cv2.bitwise_and(l, l, mask=frame)
@@ -63,7 +84,7 @@ class LineDetector():
         # apply Canny edge detection
         frame = cv2.Canny(frame, self.cannyKey["threshold1"], self.cannyKey["threshold2"], self.cannyKey["apertureSize"])
         
-        frame = cv2.filter2D(frame, -1, np.array([[10, 5, 10],[5, 10, 5],[10, 5, 10]]))
+        frame = cv2.filter2D(frame, -1, self.filterKernel)
         
         return frame
     
@@ -96,3 +117,31 @@ class LineDetector():
             return (prog, frame)
 
         return (None, frame)
+
+    def checkForHit(self, leftHit, rightHit, currTime, prevCenter):
+        # update stored values if we have fresh detections
+        if leftHit is not None:
+            self.lastLeftHit  = leftHit
+            self.lastLeftTime = currTime
+        if rightHit is not None:
+            self.lastRightHit  = rightHit
+            self.lastRightTime = currTime
+
+        # check if stored values are still within the stale timeout
+        leftValid  = self.lastLeftHit  is not None and (currTime - self.lastLeftTime)  < self.MAX_STALE_TIME
+        rightValid = self.lastRightHit is not None and (currTime - self.lastRightTime) < self.MAX_STALE_TIME
+
+        if leftValid and rightValid:
+            mode = "both"
+            laneCenter = self.lastLeftHit / (self.lastLeftHit + self.lastRightHit)
+        elif leftValid:
+            mode = "single-left"
+            laneCenter = self.lastLeftHit
+        elif rightValid:
+            mode = "single-right"
+            laneCenter = 1 - self.lastRightHit
+        else:
+            mode = "lost"
+            laneCenter = prevCenter  # hold last known center
+        
+        return mode, laneCenter

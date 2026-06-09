@@ -1,0 +1,58 @@
+{
+  "enable_clahe": 1,
+  "clipLimit": 0.3,
+  "tileGridSize": [
+    6,
+    6
+  ],
+  "hls_lower_bound": [
+    0,
+    209,
+    0
+  ],
+  "hls_upper_bound": [
+    255,
+    255,
+    170
+  ],
+  "enable_blur": 1,
+  "blur": [
+    9,
+    9
+  ],
+  "sigma": 2,
+  "enable_canny": 1,
+  "canny_threshold1": 100,
+  "canny_threshold2": 230,
+  "enable_morph": 0,
+  "canny_kernel": [
+    1,
+    1
+  ],
+  "canny_dilation_iterations": 2,
+  "canny_erosion_iterations": 3,
+  "enable_adaptive_threshold": 0,
+  "adaptive_threshold": 116,
+  "adaptive_range": 45,
+  "adaptive_constant": 17,
+  "enable_threshold": 0,
+  "contrast_thresholds": [
+    200,
+    255
+  ],
+  "enable_sobel": 0,
+  "sobel_ksize": 3,
+  "sobel_threshold": 64,
+  "hough_threshold": 201,
+  "minLineLength": 90,
+  "maxLineGap": 122,
+  "hough_pi": 180,
+  "vertical_line_x": 463,
+  "horizontal_line_y": 225,
+  "roi": [
+    0,
+    0,
+    759,
+    562
+  ]
+}

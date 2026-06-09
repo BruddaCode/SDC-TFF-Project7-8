@@ -38,28 +38,20 @@ class CarController:
         if not (0 <= speed <= 255):
             raise ValueError("Speed must be between 0 and 255")
         
-        if speed >=1:
-            self.brake(0)
-        
         self.drivemsg.data = [speed, 0, 1, 0, 0, 0, 0, 0]
         self.drivetask.modify_data(self.drivemsg)
 
-    def steer(self, angle: int,):
+    def steer(self, angle: int):
         if not (-100 <= angle <= 100):
             raise ValueError("Angle must be between -100 and 100")
-        angle = float(round((angle/100*1.25), 2))
-        print(angle)
-        angleBytes = list(bytearray(struct.pack('f', angle)))
-        self.steermsg.data = angleBytes + [0, 0, 195, 0]
-        # print steermsg data for debugging in ints
+        
+        angle = round((angle/100*1.25), 2)
+        self.steermsg.data = list(bytearray(struct.pack('f', angle))) + [0, 0, 195, 0]
         self.steertask.modify_data(self.steermsg)
 
     def brake(self, force: int = 100):
         if not (0 <= force <= 100):
             raise ValueError("Force must be between 0 and 100")
-        
-        if force >=1:
-            self.drive(0)
         
         self.brakemsg.data = [force, 0, 0, 0, 0, 0, 0, 0]
         self.braketask.modify_data(self.brakemsg)
@@ -67,10 +59,6 @@ class CarController:
     def stop(self):
         self.drive(0)
         self.brake()
-
-    def listener(self): 
-        for msg in self.bus:
-            print(f"Received message: {msg}")
 
     def turnOffBus(self):
         self.bus.shutdown()

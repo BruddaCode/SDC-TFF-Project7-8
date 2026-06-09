@@ -1,9 +1,16 @@
+import json
+
 class PIDController:
-    def __init__(self, Kp, Ki, Kd, setpoint):
-        self.Kp = Kp
-        self.Ki = Ki
-        self.Kd = Kd
-        self.setpoint = setpoint
+    def __init__(self, Kp=None, Ki=None, Kd=None, setpoint=None):
+
+        with open("config.json", "r") as f:
+            config = json.load(f)
+        PIDValues = config["PID"]
+
+        self.Kp = PIDValues["Kp"]
+        self.Ki = PIDValues["Ki"]
+        self.Kd = PIDValues["Kd"]
+        self.setpoint = PIDValues["targetCenter"]
         self.previous_error = 0
         self.integral = 0
 
