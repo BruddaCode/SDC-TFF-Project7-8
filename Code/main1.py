@@ -292,13 +292,13 @@ if __name__ == "__main__":
         if threadR.latestFrame is not None:
             cv2.imshow("right", threadR.latestFrame)
 
-        # if threadM.latestFrame is not None:
-        #     cv2.imshow("middle", threadM.latestFrame)
+        if threadM.latestFrame is not None:
+            cv2.imshow("middle", threadM.latestFrame)
 
         if cv2.waitKey(30) & 0xFF == ord('q'):
             threadL.stop()
             threadR.stop()
-            # threadM.stop()
+            threadM.stop()
             break
     
         
