@@ -36,12 +36,12 @@ if __name__ == "__main__":
 
     if DEBUG:
         videoPath = "2026-05-28_beelden_onderbrokenlijn"
-        # camM = StereoCamera(videoPath=f"{videoPath}/middle.mp4", camPos="middle")
+        camM = StereoCamera(videoPath=f"{videoPath}/middle.mp4", camPos="middle")
         camL = StereoCamera(videoPath=f"{videoPath}/left.mp4", camPos="left")
         camR = StereoCamera(videoPath=f"{videoPath}/right.mp4", camPos="right")
     else:
         ids = StereoCamera.getCameraId()
-        # camM = StereoCamera(index=ids[0], camPos="middle")
+        camM = StereoCamera(index=ids[0], camPos="middle")
         camL = StereoCamera(index=ids[1], camPos="left")
         camR = StereoCamera(index=ids[2], camPos="right")
     
@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     threadL = LineThread(camL)
     threadR = LineThread(camR)
-    # threadM = ObjectDetector(camM)
+    threadM = ObjectDetector(camM)
 
     pid = PIDController()
     
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     
     threadL.start()
     threadR.start()    
-    # threadM.start()
+    threadM.start()
     prevCenter = pid.setpoint
     prevTime = time.time()
     
@@ -128,47 +128,50 @@ if __name__ == "__main__":
                     case "speed-sign-30":
                         speedSign30 = det
 
-        if stopSign and stopSign[1] < 3.0:
-            print(f"Stop sign detected at {stopSign[1]}m, stopping kart")
-            if controller is not None:
-                if StopSignFlag == False:
-                    controller.drive(0)
-                    controller.brake(100)
-                    StopSignFlag = True
-                    delay(DELAY_DURATION * 1000) # wait for 3 seconds, can be tuned
-                else:
-                    print("Already stopped for stop sign, ignoring")
-                    controller.brake(0)
-                    controller.drive(KART_SPEED)
+        if stopSign:
+            if stopSign[1] < 3.0:
+                print(f"Stop sign detected at {stopSign[1]}m, stopping kart")
+                if controller is not None:
+                    if StopSignFlag == False:
+                        controller.drive(0)
+                        controller.brake(100)
+                        StopSignFlag = True
+                        delay(DELAY_DURATION * 1000) # wait for 3 seconds, can be tuned
+                    else:
+                        print("Already stopped for stop sign, ignoring")
+                        controller.brake(0)
+                        controller.drive(KART_SPEED)
         else:
             StopSignFlag = False    
 
-        if greenLight and greenLight[1] < 3.0: 
-            print(f"Green light detected at {greenLight[1]}m, go go go!")
-            if controller is not None:
-                controller.drive(KART_SPEED)
+        if greenLight:
+            if greenLight[1] < 3.0: 
+                print(f"Green light detected at {greenLight[1]}m, go go go!")
+                if controller is not None:
+                    controller.drive(KART_SPEED)
 
-        elif redLight and redLight[1] < 3.0:
-            print(f"Red light detected at {redLight[1]}m, stopping kart")
-            if controller is not None:
-                controller.drive(0)
-                controller.brake(100)
-        
-        if zebraCrossing and zebraCrossing[1] < 5.0:
-            if person and person[1] < 5.0: 
-                print(f"Person detected on zebra crossing at {person[1]}m, stopping kart, at {person[2]}px")
+        elif redLight:
+            if redLight[1] < 3.0:
+                print(f"Red light detected at {redLight[1]}m, stopping kart")
                 if controller is not None:
                     controller.drive(0)
                     controller.brake(100)
-            else:
-                print(f"Zebra crossing detected at {zebraCrossing[1]}m, slowing down")
-                if controller is not None:
-                    controller.drive(KART_SPEED // 2)
-            # lineDetectionEnabled = False
-            # if controller is not None:
-                # controller.drive(30)
-            # else:
-                # lineDetectionEnabled = True
+        
+        if zebraCrossing: 
+            if zebraCrossing[1] < 5.0:
+                lineDetectionEnabled = False
+                if person and person[1] < 5.0: 
+                    print(f"Person detected on zebra crossing at {person[1]}m, stopping kart, at {person[2]}px")
+                    if controller is not None:
+                        controller.drive(0)
+                        controller.brake(100)
+                else:
+                    print(f"Zebra crossing detected at {zebraCrossing[1]}m, slowing down")
+                    if controller is not None:
+                        controller.drive(KART_SPEED // 2)
+        else:
+            lineDetectionEnabled = True
+            # controller.drive(KART_SPEED)
 
         # elif det[0] == "person" and det[1] is not None and det[1] < 5.0:
         #     if det[2] >= 961: # person on right side, so walking from right to left
@@ -178,15 +181,16 @@ if __name__ == "__main__":
         #             time.sleep(5)  # wait for 5 seconds, can be tuned
         #             controller.drive(KART_SPEED)
 
-        if signLeftOnly or oneWayLeft and signLeftOnly[1] < 5.0 or oneWayLeft[1] < 5.0: # TODO: tune distance threshold
-            if turn_start_time is None:  # Only trigger once
-                print(f"{det[0]} at {det[1]}m, preparing to turn left")
-                turn_start_time = time.time()
-                if controller is not None:
-                    currentAngle = -50
-                    lineDetectionEnabled = False
-                    controller.steer(currentAngle)
-                    controller.drive(KART_SPEED)
+        if signLeftOnly or oneWayLeft:
+            if signLeftOnly[1] < 5.0 or oneWayLeft[1] < 5.0: # TODO: tune distance threshold
+                if turn_start_time is None:  # Only trigger once
+                    print(f"{det[0]} at {det[1]}m, preparing to turn left")
+                    turn_start_time = time.time()
+                    if controller is not None:
+                        currentAngle = -50
+                        lineDetectionEnabled = False
+                        controller.steer(currentAngle)
+                        controller.drive(KART_SPEED)
 
         if turn_start_time is not None and time.time() - turn_start_time >= TURN_DURATION:
             print("Turn complete, re-enabling line detection")
@@ -250,6 +254,7 @@ if __name__ == "__main__":
         lastMode = mode
 
         print(f"Mode: {mode:12s} | brokenL: {BROKEN_LINE_LEFT} | brokenR: {BROKEN_LINE_RIGHT}", flush=True)
+        
         # periodic steering update
         # if controller is not None:
         #     counter+=1
