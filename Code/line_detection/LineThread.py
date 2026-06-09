@@ -29,10 +29,10 @@ class LineThread(threading.Thread):
         
         self.latestFrame = None
         self.latestIntersection = None
-        # self.brokenLine = False
-        # self.lastHitTime = 0.0
-        # self.breakThreshold = 0.7
-        # self.lineThreshold = 4.0
+        self.brokenLine = False
+        self.lastHitTime = 0.0
+        self.breakThreshold = 0.7
+        self.lineThreshold = 4.0
 
         self.roi = np.array([[self.roiKey["x1"], self.roiKey["y1"]], [self.roiKey["x2"], self.roiKey["y2"]], [self.roiKey["x3"], self.roiKey["y3"]], [self.roiKey["x4"], self.roiKey["y4"]]], np.int32)
         self.roiBounds = cv2.boundingRect(self.roi)
@@ -98,13 +98,13 @@ class LineThread(threading.Thread):
                 self._cond.wait(timeout=remaining)
             return self.latestIndex
         
-    # def checkForBrokenLine(self):
-    #     currentTime = time.time()
-    #     if currentTime - self.lastHitTime >= self.breakThreshold:
-    #         self.brokenLine = True
+    def checkForBrokenLine(self):
+        currentTime = time.time()
+        if currentTime - self.lastHitTime >= self.breakThreshold:
+            self.brokenLine = True
         
-    #     if currentTime - self.lastHitTime >= self.lineThreshold:
-    #         self.brokenLine = False
+        if currentTime - self.lastHitTime >= self.lineThreshold:
+            self.brokenLine = False
 
     def run(self):
         while self.running:
@@ -147,9 +147,9 @@ class LineThread(threading.Thread):
                 self.latestFrame = frame
                 self.latestIntersection = intersection
                 
-            # if intersection is not None:
-            #     self.lastHitTime = time.time()
-            # self.checkForBrokenLine()
+            if intersection is not None:
+                self.lastHitTime = time.time()
+            self.checkForBrokenLine()
             # print(f"LineThread {self.cam.camPos} / Broken: {self.brokenLine} / LastHitTime {self.lastHitTime}", flush=True)
             time.sleep(1/30)
         self.cam.release()

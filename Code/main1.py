@@ -37,6 +37,26 @@ turn_start_time = None
 TURN_DURATION = 2.0  # TODO: tune this
 DELAY_DURATION = 3.0 # time to wait at stop sign, can be tuned
 
+LEFT = False
+RIGHT = True
+switchToLeftLane = False
+switchToRightLane = False
+laneTime = 2000
+startLaneSwitch = 0
+
+def switchLane(direction, controller):
+    if time.time() - startLaneSwitch <= laneTime:
+        steer = 20
+        if not direction:
+            steer = -steer
+        lineDetectionEnabled = False
+    
+        controller.steer(steer)
+        controller.drive(KART_SPEED)
+    else:
+        lineDetectionEnabled = True
+
+
 if __name__ == "__main__":
 
     if DEBUG:
@@ -103,7 +123,7 @@ if __name__ == "__main__":
         SpeedSignFlag = False
 
         detections = threadM.latestDetections
-        print(f"Detections: {detections}")
+        # print(f"Detections: {detections}")
 
         if detections is not None:
             for det in detections:
@@ -279,7 +299,20 @@ if __name__ == "__main__":
 
         lastMode = mode
 
-        print(f"Mode: {mode:12s} | brokenL: {BROKEN_LINE_LEFT} | brokenR: {BROKEN_LINE_RIGHT}", flush=True)
+        if lastLeftHit is not None and lastRightHit is not None:
+            if lastLeftHit <= 0.20 and lastRightHit <= 0.28 and BROKEN_LINE_LEFT:
+                switchToLeftLane = True
+                startLaneSwitch = time.time()
+            elif lastLeftHit <= 0.20 and lastRightHit <= 0.28 and BROKEN_LINE_RIGHT:
+                switchToRightLane = True
+                startLaneSwitch = time.time()
+
+        if switchToLeftLane:
+            switchLane(LEFT)
+        elif switchToRightLane:
+            switchLane(RIGHT)
+
+        # print(f"Mode: {mode:12s} | brokenL: {BROKEN_LINE_LEFT} | brokenR: {BROKEN_LINE_RIGHT}", flush=True)
         
         # periodic steering update
         # if controller is not None:
