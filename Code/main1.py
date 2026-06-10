@@ -200,6 +200,8 @@ if __name__ == "__main__":
                     else:
                         print(f"Zebra crossing detected at {zebraCrossing[1]}m, slowing down")
                         if controller is not None:
+                            controller.brake(0)
+                            controller.steer(0)
                             controller.drive(40)
             except Exception as e:
                 print(f"Error getting distance for zebra crossing: {e}")
