@@ -70,7 +70,10 @@ def switchLane(direction, controller):
     if time.time() - startLaneSwitch <= laneTime:
         steer = 30
         if not direction:
+            switchToLeftLane = True
             steer = -steer
+        else:
+            switchToRightLane = True
         lineDetectionEnabled = False
     
         controller.steer(steer)
