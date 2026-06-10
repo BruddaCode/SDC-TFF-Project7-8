@@ -34,7 +34,7 @@ lineDetectionEnabled = True
 
 # turn tracking
 turn_start_time = None
-TURN_DURATION = 2.0  # TODO: tune this
+TURN_DURATION = 6.0  # TODO: tune this
 DELAY_DURATION = 3.0 # time to wait at stop sign, can be tuned
 
 # Testing Stuffs
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         if stopSign:
             try:
                 if stopSign[1] < 8.0:
-                    print(f"Stop sign detected at {stopSign[1]}m, stopping kart")
+                    print(f"Stop sign detected at {stopSign[1]}m, stopping kart, {StopSignFlag}")
                     if controller is not None:
                         if StopSignFlag == False:
                             controller.drive(0)
@@ -230,7 +230,7 @@ if __name__ == "__main__":
                         turn_start_time = time.time()
                         switchLaneOnNextBrokenLine = True
                         if controller is not None:
-                            currentAngle = -50
+                            currentAngle = -100
                             lineDetectionEnabled = False
                             controller.steer(currentAngle)
                             controller.drive(KART_SPEED)
