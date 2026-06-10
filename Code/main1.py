@@ -46,7 +46,7 @@ startLaneSwitch = 0
 
 def switchLane(direction, controller):
     if time.time() - startLaneSwitch <= laneTime:
-        steer = 20
+        steer = 50
         if not direction:
             steer = -steer
         lineDetectionEnabled = False
@@ -300,17 +300,17 @@ if __name__ == "__main__":
         lastMode = mode
 
         if lastLeftHit is not None and lastRightHit is not None:
-            if lastLeftHit <= 0.20 and lastRightHit <= 0.28 and BROKEN_LINE_LEFT:
+            if lastLeftHit <= 0.24 and lastRightHit <= 0.24 and BROKEN_LINE_LEFT:
                 switchToLeftLane = True
                 startLaneSwitch = time.time()
-            elif lastLeftHit <= 0.20 and lastRightHit <= 0.28 and BROKEN_LINE_RIGHT:
+            elif lastLeftHit <= 0.24 and lastRightHit <= 0.24 and BROKEN_LINE_RIGHT:
                 switchToRightLane = True
                 startLaneSwitch = time.time()
 
         if switchToLeftLane:
-            switchLane(LEFT)
+            switchLane(LEFT, controller)
         elif switchToRightLane:
-            switchLane(RIGHT)
+            switchLane(RIGHT, controller)
 
         # print(f"Mode: {mode:12s} | brokenL: {BROKEN_LINE_LEFT} | brokenR: {BROKEN_LINE_RIGHT}", flush=True)
         
