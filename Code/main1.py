@@ -52,6 +52,7 @@ stopCounter = 0
 stopDelay = 10
 StopSignFlag = False
 
+# TODO: tune distance threshold
 # detection distances
 STOP_SIGN_DISTANCE = 8.0
 TRAFFIC_LIGHT_DISTANCE = 3.0
@@ -77,7 +78,7 @@ def switchLane(direction, controller):
         lineDetectionEnabled = False
     
         controller.steer(steer)
-        controller.drive(KART_SPEED)
+        controller.drive(KART_SPEED) # misschien snelheid verlagen??? idfk 
     else:
         lineDetectionEnabled = True
         switchToLeftLane = False
@@ -247,7 +248,7 @@ if __name__ == "__main__":
         # op basis van tijd
         if signLeftOnly or oneWayLeft:
             try:
-                if signLeftOnly[1] < LEFT_TURN_SIGN_DISTANCE or oneWayLeft[1] < LEFT_TURN_SIGN_DISTANCE: # TODO: tune distance threshold
+                if signLeftOnly[1] < LEFT_TURN_SIGN_DISTANCE or oneWayLeft[1] < LEFT_TURN_SIGN_DISTANCE: 
                     lineDetectionEnabled = False
                     switchLaneOnNextBrokenLine = True
                     turnFlag = True
@@ -265,35 +266,12 @@ if __name__ == "__main__":
                 lineDetectionEnabled = True
                 turnFlag = False
                 turnCounter = 0
-        
-        # op basis van het bord wel of niet zien
-        # if signLeftOnly or oneWayLeft:
-        #     try:
-        #         if signLeftOnly[1] < 5.0 or oneWayLeft[1] < 5.0: # TODO: tune distance threshold
-        #             lineDetectionEnabled = False
-        #             if turn_start_time is None:  # Only trigger once
-        #                 print(f"{det[0]} at {det[1]}m, preparing to turn left")
-        #                 turn_start_time = time.time()
-        #                 switchLaneOnNextBrokenLine = True
-        #                 if controller is not None:
-        #                     currentAngle = -100
-        #                     lineDetectionEnabled = False
-        #                     controller.steer(currentAngle)
-        #                     controller.drive(KART_SPEED)
-        #     except Exception as e:
-        #         print(f"Error getting distance for left turn sign: {e}")
                 
         if car:
             try:
                 if car[1] < CAR_DISTANCE:
                     print(f"Car detected at {car[1]}m, slowing down")
                     overtakeCar = True
-                    # if controller is not None:
-                    #     controller.drive(0)
-                    #     controller.brake(100)  # apply moderate brake, can be tuned
-                    #     # switch lane to side where is broken line
-                    #     # drive for x seconds I guess (could be done with lidar data, but too much work, cause lidar is ass)
-                    #     # switch back to original lane
             except Exception as e:
                 print(f"Error getting distance for car: {e}")
 
