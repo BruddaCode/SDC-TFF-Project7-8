@@ -13,7 +13,7 @@ class ObjectDetector(threading.Thread):
             self.config = json.load(file)
         
         try:
-            self.model = YOLO(os.path.join(os.path.dirname(__file__), 'TheNewModel', 'sdc_yolov8n3-5', 'weights', 'best_openvino_model'))
+            self.model = YOLO(os.path.join(os.path.dirname(__file__), 'TheNewestModel', 'TheSigmaModel_openvino_model'))
         except Exception as e:
             print(f"Error loading model: {e}")
         
