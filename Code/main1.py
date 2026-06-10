@@ -42,8 +42,13 @@ RIGHT = True
 switchToLeftLane = False
 switchToRightLane = False
 switchLaneOnNextBrokenLine = False
-laneTime = 2000
+laneTime = 2
 startLaneSwitch = 0
+
+overtakeCar = False
+overtakeCarStep = 0
+stepTwoStart = 0
+overtakeDuration = 10
 
 StopSignFlag = False
 
@@ -241,9 +246,13 @@ if __name__ == "__main__":
             try:
                 if car[1] < 4.0:
                     print(f"Car detected at {car[1]}m, slowing down")
+                    overtakeCar = True
                     if controller is not None:
                         controller.drive(0)
                         controller.brake(100)  # apply moderate brake, can be tuned
+                        # switch lane to side where is broken line
+                        # drive for x seconds I guess (could be done with lidar data, but too much work, cause lidar is ass)
+                        # switch back to original lane
             except Exception as e:
                 print(f"Error getting distance for car: {e}")
 
@@ -257,6 +266,35 @@ if __name__ == "__main__":
             controller.steer(currentAngle)  # Maintain turn angle until turn is complete
             controller.drive(KART_SPEED)
 
+        
+        if overtakeCar:
+            match overtakeCarStep:
+                case 0:
+                    if BROKEN_LINE_LEFT:
+                        switchToLeftLane = True
+                    elif BROKEN_LINE_RIGHT:
+                        switchToRightLane = True
+                    lineDetectionEnabled = False
+                    startLaneSwitch = time.time()
+                    if time.time() - startLaneSwitch >= laneTime:
+                        overtakeCarStep += 1
+                        stepTwoStart = time.time()
+                    break
+                case 1:
+                    if time.time() - stepTwoStart >= overtakeDuration:
+                        overtakeCarStep += 1
+                    break
+                case 2:
+                    if BROKEN_LINE_LEFT:
+                        switchToLeftLane = True
+                    elif BROKEN_LINE_RIGHT:
+                        switchToRightLane = True
+                    lineDetectionEnabled = False
+                    startLaneSwitch = time.time()
+                    if time.time() - startLaneSwitch >= laneTime:
+                        overtakeCarStep = 0
+                        overtakeCar = False
+                    break
 
         # ----------------------------------------------------------------
 
