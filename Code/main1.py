@@ -41,12 +41,13 @@ LEFT = False
 RIGHT = True
 switchToLeftLane = False
 switchToRightLane = False
+switchLaneOnNextBrokenLine = False
 laneTime = 2000
 startLaneSwitch = 0
 
 def switchLane(direction, controller):
     if time.time() - startLaneSwitch <= laneTime:
-        steer = 50
+        steer = 30
         if not direction:
             steer = -steer
         lineDetectionEnabled = False
@@ -55,6 +56,8 @@ def switchLane(direction, controller):
         controller.drive(KART_SPEED)
     else:
         lineDetectionEnabled = True
+        switchToLeftLane = False
+        switchToRightLane = False
 
 
 if __name__ == "__main__":
@@ -223,6 +226,7 @@ if __name__ == "__main__":
                     if turn_start_time is None:  # Only trigger once
                         print(f"{det[0]} at {det[1]}m, preparing to turn left")
                         turn_start_time = time.time()
+                        switchLaneOnNextBrokenLine = True
                         if controller is not None:
                             currentAngle = -50
                             lineDetectionEnabled = False
@@ -302,11 +306,11 @@ if __name__ == "__main__":
 
         lastMode = mode
 
-        if lastLeftHit is not None and lastRightHit is not None:
-            if lastLeftHit <= 0.24 and lastRightHit <= 0.24 and BROKEN_LINE_LEFT:
+        if switchLaneOnNextBrokenLine and lineDetectionEnabled:
+            if BROKEN_LINE_LEFT:
                 switchToLeftLane = True
                 startLaneSwitch = time.time()
-            elif lastLeftHit <= 0.24 and lastRightHit <= 0.24 and BROKEN_LINE_RIGHT:
+            elif BROKEN_LINE_RIGHT:
                 switchToRightLane = True
                 startLaneSwitch = time.time()
 
