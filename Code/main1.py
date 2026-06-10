@@ -154,7 +154,7 @@ if __name__ == "__main__":
 
         if stopSign:
             try:
-                if stopSign[1] < 3.0:
+                if stopSign[1] < 8.0:
                     print(f"Stop sign detected at {stopSign[1]}m, stopping kart")
                     if controller is not None:
                         if StopSignFlag == False:
