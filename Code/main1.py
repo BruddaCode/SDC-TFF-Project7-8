@@ -37,9 +37,6 @@ turn_start_time = None
 TURN_DURATION = 6.0  # TODO: tune this
 DELAY_DURATION = 3.0 # time to wait at stop sign, can be tuned
 
-# Testing Stuffs
-StopSignFlag = False
-
 LEFT = False
 RIGHT = True
 switchToLeftLane = False
@@ -47,6 +44,9 @@ switchToRightLane = False
 switchLaneOnNextBrokenLine = False
 laneTime = 2000
 startLaneSwitch = 0
+
+StopSignFlag = False
+
 
 def switchLane(direction, controller):
     if time.time() - startLaneSwitch <= laneTime:
@@ -287,7 +287,7 @@ if __name__ == "__main__":
         steer = pid.compute(laneCenter, dt)
         steer = -(round((np.clip(np.interp(steer, [-PID_STRENGTH, PID_STRENGTH], [-100, 100]), -100, 100)), 2))
 
-        # print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
+        print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
 
         
         if mode == "both":
