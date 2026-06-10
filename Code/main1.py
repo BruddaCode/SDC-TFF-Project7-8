@@ -199,7 +199,7 @@ if __name__ == "__main__":
                     else:
                         print(f"Zebra crossing detected at {zebraCrossing[1]}m, slowing down")
                         if controller is not None:
-                            controller.drive(KART_SPEED // 2)
+                            controller.drive(40)
             except Exception as e:
                 print(f"Error getting distance for zebra crossing: {e}")
         else:
@@ -308,9 +308,9 @@ if __name__ == "__main__":
                 startLaneSwitch = time.time()
 
         if switchToLeftLane:
-            switchLane(LEFT)
+            switchLane(LEFT, controller)
         elif switchToRightLane:
-            switchLane(RIGHT)
+            switchLane(RIGHT, controller)
 
         # print(f"Mode: {mode:12s} | brokenL: {BROKEN_LINE_LEFT} | brokenR: {BROKEN_LINE_RIGHT}", flush=True)
         
