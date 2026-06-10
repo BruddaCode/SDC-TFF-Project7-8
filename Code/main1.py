@@ -202,7 +202,7 @@ if __name__ == "__main__":
             try:
                 if zebraCrossing[1] < 5.0:
                     lineDetectionEnabled = False
-                    if person and person[1] < 5.0: 
+                    if person and person[1] < 5.0 and person[2] > 600: 
                         print(f"Person detected on zebra crossing at {person[1]}m, stopping kart, at {person[2]}px")
                         if controller is not None:
                             controller.drive(0)

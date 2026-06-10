@@ -139,7 +139,7 @@ class LineDetector():
             laneCenter = self.lastLeftHit / (self.lastLeftHit * 2)
         elif rightValid:
             mode = "single-right"
-            laneCenter = 1 - self.lastRightHit / (self/self.lastRightHit * 2)
+            laneCenter = 1 - self.lastRightHit / (self.lastRightHit * 2)
         else:
             mode = "lost"
             laneCenter = prevCenter  # hold last known center
