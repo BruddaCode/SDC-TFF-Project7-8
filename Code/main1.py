@@ -37,6 +37,9 @@ turn_start_time = None
 TURN_DURATION = 2.0  # TODO: tune this
 DELAY_DURATION = 3.0 # time to wait at stop sign, can be tuned
 
+# Testing Stuffs
+StopSignFlag = False
+
 LEFT = False
 RIGHT = True
 switchToLeftLane = False
@@ -114,7 +117,6 @@ if __name__ == "__main__":
 
         oneWayLeft = None
         stopSign = None
-        StopSignFlag = False
         signLeftOnly = None
         redLight = None
         greenLight = None
