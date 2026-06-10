@@ -16,11 +16,6 @@ DEBUG = 0
 # turn controller on or off
 CONTROLLER_ENABLED = 1
 KART_SPEED = 50
-currentAngle = 0
-
-# canbus send msg delay
-counter = 0
-delay = 2
 
 # broken line tracking
 BROKEN_LINE_LEFT = False
@@ -33,10 +28,12 @@ PID_STRENGTH = 0.16
 lineDetectionEnabled = True
 
 # turn tracking
-turn_start_time = None
-TURN_DURATION = 6.0  # TODO: tune this
-DELAY_DURATION = 3.0 # time to wait at stop sign, can be tuned
+turnFlag = False
+turnDelay = 10
+turnCounter = 0
+turnAngle = -100
 
+# overtaking tracking
 LEFT = False
 RIGHT = True
 switchToLeftLane = False
@@ -50,10 +47,26 @@ overtakeCarStep = 0
 stepTwoStart = 0
 overtakeDuration = 10
 
+# stop sign delay tracking
+stopCounter = 0
+stopDelay = 10
 StopSignFlag = False
+
+# detection distances
+STOP_SIGN_DISTANCE = 8.0
+TRAFFIC_LIGHT_DISTANCE = 3.0
+ZEBRA_CROSSING_DISTANCE = 5.0
+PERSON_ON_ZEBRA_DISTANCE = 5.0
+PERSON_POSITION_THRESHOLD = 600
+LEFT_TURN_SIGN_DISTANCE = 5.0
+CAR_DISTANCE = 4.0
 
 
 def switchLane(direction, controller):
+    lineDetectionEnabled = None
+    switchToLeftLane = False
+    switchToRightLane = False
+    
     if time.time() - startLaneSwitch <= laneTime:
         steer = 30
         if not direction:
@@ -66,6 +79,8 @@ def switchLane(direction, controller):
         lineDetectionEnabled = True
         switchToLeftLane = False
         switchToRightLane = False
+        
+    return lineDetectionEnabled, switchToLeftLane, switchToRightLane
 
 
 if __name__ == "__main__":
@@ -128,6 +143,7 @@ if __name__ == "__main__":
         person = None
         zebraCrossing = None
         car = None
+        
         speedSign20 = None
         speedSign30 = None
         SpeedSignFlag = False
@@ -149,7 +165,9 @@ if __name__ == "__main__":
                     case "traffic-light-green":
                         greenLight = det
                     case "person":
-                        person = det
+                        # lowest distance gets priority
+                        if person is None or det[1] < person[1]:
+                            person = det
                     case "zebra-crossing":
                         zebraCrossing = det
                     case "car":
@@ -161,48 +179,53 @@ if __name__ == "__main__":
 
         if stopSign:
             try:
-                if stopSign[1] < 8.0:
+                if stopSign[1] < STOP_SIGN_DISTANCE:
                     print(f"Stop sign detected at {stopSign[1]}m, stopping kart, {StopSignFlag}")
                     if controller is not None:
                         if StopSignFlag == False:
                             controller.drive(0)
                             controller.brake(100)
                             StopSignFlag = True
-                            delay(DELAY_DURATION * 1000) # wait for 3 seconds, can be tuned
+                            lineDetectionEnabled = False
                         else:
-                            print("Already stopped for stop sign, ignoring")
-                            controller.brake(0)
-                            controller.drive(KART_SPEED)
+                            stopCounter+=1
+                            if stopCounter >= stopDelay:
+                                stopCounter = 0
+                                print("Already stopped for stop sign, ignoring")
+                                controller.brake(0)
+                                lineDetectionEnabled = True
             except Exception as e:
                 print(f"Error getting distance for stop sign: {e}")
         else:
-            StopSignFlag = False    
+            StopSignFlag = False
 
         if greenLight:
             try:
-                if greenLight[1] < 3.0: 
+                if greenLight[1] < TRAFFIC_LIGHT_DISTANCE: 
                     print(f"Green light detected at {greenLight[1]}m, go go go!")
                     if controller is not None:
                         controller.brake(0)
                         controller.drive(KART_SPEED)
+                        lineDetectionEnabled = True
             except Exception as e:
                 print(f"Error getting distance for green light: {e}")
 
         elif redLight:
             try:
-                if redLight[1] < 3.0:
+                if redLight[1] < TRAFFIC_LIGHT_DISTANCE:
                     print(f"Red light detected at {redLight[1]}m, stopping kart")
                     if controller is not None:
                         controller.drive(0)
                         controller.brake(100)
+                        lineDetectionEnabled = False
             except Exception as e:
                 print(f"Error getting distance for red light: {e}")
 
         if zebraCrossing: 
             try:
-                if zebraCrossing[1] < 5.0:
+                if zebraCrossing[1] < ZEBRA_CROSSING_DISTANCE:
                     lineDetectionEnabled = False
-                    if person and person[1] < 5.0 and person[2] > 600: 
+                    if person and person[1] < PERSON_ON_ZEBRA_DISTANCE and person[2] > PERSON_POSITION_THRESHOLD: 
                         print(f"Person detected on zebra crossing at {person[1]}m, stopping kart, at {person[2]}px")
                         if controller is not None:
                             controller.drive(0)
@@ -217,54 +240,59 @@ if __name__ == "__main__":
                 print(f"Error getting distance for zebra crossing: {e}")
         else:
             lineDetectionEnabled = True
-            # controller.drive(KART_SPEED)
-
-        # elif det[0] == "person" and det[1] is not None and det[1] < 5.0:
-        #     if det[2] >= 961: # person on right side, so walking from right to left
-        #         print(f"Person detected on the right at {det[1]}m, waiting for them to cross")
-        #         if controller is not None:
-        #             controller.drive(0)
-        #             time.sleep(5)  # wait for 5 seconds, can be tuned
-        #             controller.drive(KART_SPEED)
-
+            
+        # op basis van tijd
         if signLeftOnly or oneWayLeft:
             try:
-                if signLeftOnly[1] < 5.0 or oneWayLeft[1] < 5.0: # TODO: tune distance threshold
-                    if turn_start_time is None:  # Only trigger once
-                        print(f"{det[0]} at {det[1]}m, preparing to turn left")
-                        turn_start_time = time.time()
-                        switchLaneOnNextBrokenLine = True
-                        if controller is not None:
-                            currentAngle = -100
-                            lineDetectionEnabled = False
-                            controller.steer(currentAngle)
-                            controller.drive(KART_SPEED)
+                if signLeftOnly[1] < LEFT_TURN_SIGN_DISTANCE or oneWayLeft[1] < LEFT_TURN_SIGN_DISTANCE: # TODO: tune distance threshold
+                    lineDetectionEnabled = False
+                    switchLaneOnNextBrokenLine = True
+                    turnFlag = True
+                    print(f"{det[0]} at {det[1]}m, preparing to turn left")
+
             except Exception as e:
                 print(f"Error getting distance for left turn sign: {e}")
+        if turnFlag:
+            if turnCounter >= turnDelay:
+                if controller is not None:
+                    controller.steer(turnAngle)
+                    controller.drive(KART_SPEED)
+                turnCounter += 1
+            else:
+                lineDetectionEnabled = True
+                turnFlag = False
+                turnCounter = 0
+        
+        # op basis van het bord wel of niet zien
+        # if signLeftOnly or oneWayLeft:
+        #     try:
+        #         if signLeftOnly[1] < 5.0 or oneWayLeft[1] < 5.0: # TODO: tune distance threshold
+        #             lineDetectionEnabled = False
+        #             if turn_start_time is None:  # Only trigger once
+        #                 print(f"{det[0]} at {det[1]}m, preparing to turn left")
+        #                 turn_start_time = time.time()
+        #                 switchLaneOnNextBrokenLine = True
+        #                 if controller is not None:
+        #                     currentAngle = -100
+        #                     lineDetectionEnabled = False
+        #                     controller.steer(currentAngle)
+        #                     controller.drive(KART_SPEED)
+        #     except Exception as e:
+        #         print(f"Error getting distance for left turn sign: {e}")
                 
         if car:
             try:
-                if car[1] < 4.0:
+                if car[1] < CAR_DISTANCE:
                     print(f"Car detected at {car[1]}m, slowing down")
                     overtakeCar = True
-                    if controller is not None:
-                        controller.drive(0)
-                        controller.brake(100)  # apply moderate brake, can be tuned
-                        # switch lane to side where is broken line
-                        # drive for x seconds I guess (could be done with lidar data, but too much work, cause lidar is ass)
-                        # switch back to original lane
+                    # if controller is not None:
+                    #     controller.drive(0)
+                    #     controller.brake(100)  # apply moderate brake, can be tuned
+                    #     # switch lane to side where is broken line
+                    #     # drive for x seconds I guess (could be done with lidar data, but too much work, cause lidar is ass)
+                    #     # switch back to original lane
             except Exception as e:
                 print(f"Error getting distance for car: {e}")
-
-        if turn_start_time is not None and time.time() - turn_start_time >= TURN_DURATION:
-            print("Turn complete, re-enabling line detection")
-            turn_start_time = None
-            if controller is not None:
-                currentAngle = 0
-                lineDetectionEnabled = True
-        elif currentAngle != 0:
-            controller.steer(currentAngle)  # Maintain turn angle until turn is complete
-            controller.drive(KART_SPEED)
 
         
         if overtakeCar:
@@ -355,19 +383,11 @@ if __name__ == "__main__":
                 startLaneSwitch = time.time()
 
         if switchToLeftLane:
-            switchLane(LEFT, controller)
+            lineDetectionEnabled, switchToLeftLane, switchToRightLane = switchLane(LEFT, controller)
         elif switchToRightLane:
-            switchLane(RIGHT, controller)
+            lineDetectionEnabled, switchToLeftLane, switchToRightLane = switchLane(RIGHT, controller)
 
         # print(f"Mode: {mode:12s} | brokenL: {BROKEN_LINE_LEFT} | brokenR: {BROKEN_LINE_RIGHT}", flush=True)
-        
-        # periodic steering update
-        # if controller is not None:
-        #     counter+=1
-        #     if counter >= delay:
-        #         counter = 0
-        #         controller.steer(steer)
-        #         controller.drive(KART_SPEED)
 
         if controller is not None and lineDetectionEnabled:
             controller.steer(steer)
