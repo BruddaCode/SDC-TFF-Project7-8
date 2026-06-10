@@ -11,10 +11,10 @@ import cv2
 # turn frame sync on or off
 # 0 = off
 # 1 = on
-DEBUG = 1
+DEBUG = 0
 
 # turn controller on or off
-CONTROLLER_ENABLED = 0
+CONTROLLER_ENABLED = 1
 KART_SPEED = 50
 currentAngle = 0
 
@@ -173,6 +173,7 @@ if __name__ == "__main__":
                 if greenLight[1] < 3.0: 
                     print(f"Green light detected at {greenLight[1]}m, go go go!")
                     if controller is not None:
+                        controller.brake(0)
                         controller.drive(KART_SPEED)
             except Exception as e:
                 print(f"Error getting distance for green light: {e}")
