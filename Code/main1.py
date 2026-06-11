@@ -69,15 +69,15 @@ def switchLane(direction, controller):
     switchToRightLane = False
     
     if time.time() - startLaneSwitch <= laneTime:
-        steer = 30
+        steerAngle = 30
         if not direction:
             switchToLeftLane = True
-            steer = -steer
+            steerAngle = -steerAngle
         else:
             switchToRightLane = True
         lineDetectionEnabled = False
     
-        controller.steer(steer)
+        controller.steer(steerAngle)
         controller.drive(KART_SPEED) # misschien snelheid verlagen??? idfk 
     else:
         lineDetectionEnabled = True
