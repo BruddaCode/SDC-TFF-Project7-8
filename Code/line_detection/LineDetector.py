@@ -16,6 +16,7 @@ class LineDetector():
         self.lengthReferenceLine = lengthReferenceLine
         self.bumperA = bumperA
         self.bumperB = bumperB
+        self.laneWidth = 0.52
 
         self.clahe = cv2.createCLAHE(
             clipLimit=self.claheKey["clipLimit"],
@@ -132,14 +133,17 @@ class LineDetector():
         rightValid = self.lastRightHit is not None and (currTime - self.lastRightTime) < self.MAX_STALE_TIME
 
         if leftValid and rightValid:
+            width = self.lastLeftHit + self.lastRightHit
+            if width > self.laneWidth:
+                self.lastLeftHit = self.lastLeftHit + (width - self.laneWidth)
             mode = "both"
-            laneCenter = self.lastLeftHit / (self.lastLeftHit + self.lastRightHit)
+            laneCenter = self.lastLeftHit / (width)
         elif leftValid:
             mode = "single-left"
-            laneCenter = self.lastLeftHit / (self.lastLeftHit * 2)
+            laneCenter = self.lastLeftHit
         elif rightValid:
             mode = "single-right"
-            laneCenter = 1 - self.lastRightHit / (self.lastRightHit * 2)
+            laneCenter = 1 - self.lastRightHit
         else:
             mode = "lost"
             laneCenter = prevCenter  # hold last known center

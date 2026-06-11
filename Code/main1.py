@@ -11,10 +11,10 @@ import cv2
 # turn frame sync on or off
 # 0 = off
 # 1 = on
-DEBUG = 0
+DEBUG = 1
 
 # turn controller on or off
-CONTROLLER_ENABLED = 1
+CONTROLLER_ENABLED = 0
 KART_SPEED = 50
 
 # broken line tracking
