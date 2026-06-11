@@ -272,7 +272,7 @@ if __name__ == "__main__":
 
         
         if turnFlag:
-            if turnCounter >= turnDelay:
+            if turnCounter <= turnDelay:
                 if controller is not None:
                     controller.steer(turnAngle)
                     controller.drive(KART_SPEED)
