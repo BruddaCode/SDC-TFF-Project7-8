@@ -22,6 +22,8 @@ BROKEN_LINE_LEFT = False
 BROKEN_LINE_RIGHT = False
 lastMode = None
 modes = []
+singleLeftCounter = 0
+singleRightCounter = 0
 
 # stale value tracking for line detection
 PID_STRENGTH = 0.16
@@ -29,9 +31,9 @@ lineDetectionEnabled = True
 
 # turn tracking
 turnFlag = False
-turnDelay = 120
+turnDelay = 10
 turnCounter = 0
-turnAngle = -90
+turnAngle = -100
 
 # overtaking tracking
 LEFT = False
@@ -49,7 +51,7 @@ overtakeDuration = 10
 
 # stop sign delay tracking
 stopCounter = 0
-stopDelay = 300
+stopDelay = 10
 StopSignFlag = False
 
 # TODO: tune distance threshold
@@ -153,7 +155,7 @@ if __name__ == "__main__":
         SpeedSignFlag = False
 
         detections = threadM.latestDetections
-        print(f"Detections: {detections}")
+        # print(f"Detections: {detections}")
 
         if detections is not None:
             for det in detections:
@@ -184,18 +186,16 @@ if __name__ == "__main__":
         if stopSign:
             try:
                 if stopSign[1] < STOP_SIGN_DISTANCE:
+                    print(f"Stop sign detected at {stopSign[1]}m, stopping kart, {StopSignFlag}")
                     if controller is not None:
                         if StopSignFlag == False:
-                            print(f"Stop sign detected at {stopSign[1]}m, stopping kart, {StopSignFlag}")
                             controller.drive(0)
                             controller.brake(100)
                             StopSignFlag = True
                             lineDetectionEnabled = False
                         else:
                             stopCounter+=1
-                            print(f"Already stopped for stop sign, counting... {stopCounter}/{stopDelay}")
                             if stopCounter >= stopDelay:
-                                print(f"Stop delay passed, resuming driving")
                                 stopCounter = 0
                                 print("Already stopped for stop sign, ignoring")
                                 controller.brake(0)
@@ -247,36 +247,21 @@ if __name__ == "__main__":
         else:
             lineDetectionEnabled = True
             
-
-        if signLeftOnly and turnFlag == False:
+        # op basis van tijd
+        if signLeftOnly or oneWayLeft:
             try:
-                if signLeftOnly[1] < LEFT_TURN_SIGN_DISTANCE: 
+                if signLeftOnly[1] < LEFT_TURN_SIGN_DISTANCE or oneWayLeft[1] < LEFT_TURN_SIGN_DISTANCE: 
                     lineDetectionEnabled = False
                     switchLaneOnNextBrokenLine = True
                     turnFlag = True
-                    print(f"Left turn sign detected at {signLeftOnly[1]}m, preparing to turn left")
+                    print(f"{det[0]} at {det[1]}m, preparing to turn left")
 
             except Exception as e:
                 print(f"Error getting distance for left turn sign: {e}")
-        
-        if oneWayLeft and turnFlag == False:
-            try:
-                if oneWayLeft[1] < LEFT_TURN_SIGN_DISTANCE: 
-                    lineDetectionEnabled = False
-                    switchLaneOnNextBrokenLine = True
-                    turnFlag = True
-                    print(f"One-way left sign detected at {oneWayLeft[1]}m, preparing to turn left")
-
-            except Exception as e:
-                print(f"Error getting distance for left turn sign: {e}")
-        
         if turnFlag:
-            lineDetectionEnabled = False
-            print(f"Turning... {turnCounter}/{turnDelay}")
-            if turnCounter <= turnDelay:
+            if turnCounter >= turnDelay:
                 if controller is not None:
-                    if turnCounter > 40:
-                        controller.steer(turnAngle)
+                    controller.steer(turnAngle)
                     controller.drive(KART_SPEED)
                 turnCounter += 1
             else:
@@ -351,19 +336,28 @@ if __name__ == "__main__":
         steer = pid.compute(laneCenter, dt)
         steer = -(round((np.clip(np.interp(steer, [-PID_STRENGTH, PID_STRENGTH], [-100, 100]), -100, 100)), 2))
 
-        # print(f"LaneFlag: {lineDetectionEnabled} | Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
+        print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
 
+        # stukje comment voor push
         
         if mode == "both":
             modes.append("both")
 
         if (mode == "single-left" and lastMode == "single-left"):
             modes = []
-            BROKEN_LINE_RIGHT = True
+            singleLeftCounter += 1
+            if singleLeftCounter >= 10:  # tune this threshold
+                BROKEN_LINE_RIGHT = True
+        else:
+            singleLeftCounter = 0
         
         if (mode == "single-right" and lastMode == "single-right"):
             modes = []
-            BROKEN_LINE_LEFT = True
+            singleRightCounter += 1
+            if singleRightCounter >= 10:  # tune this threshold
+                BROKEN_LINE_LEFT = True
+        else:
+            singleRightCounter = 0
         
         if len(modes) >= 20:
             BROKEN_LINE_LEFT = False
@@ -384,10 +378,10 @@ if __name__ == "__main__":
             lineDetectionEnabled, switchToLeftLane, switchToRightLane = switchLane(LEFT, controller)
         elif switchToRightLane:
             lineDetectionEnabled, switchToLeftLane, switchToRightLane = switchLane(RIGHT, controller)
+        else:
+            switchLaneOnNextBrokenLine = False
 
         # print(f"Mode: {mode:12s} | brokenL: {BROKEN_LINE_LEFT} | brokenR: {BROKEN_LINE_RIGHT}", flush=True)
-        if turnFlag == False:
-            lineDetectionEnabled = True
 
         if controller is not None and lineDetectionEnabled:
             controller.steer(steer)
