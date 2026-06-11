@@ -367,6 +367,8 @@ if __name__ == "__main__":
             lineDetectionEnabled, switchToLeftLane, switchToRightLane = switchLane(LEFT, controller)
         elif switchToRightLane:
             lineDetectionEnabled, switchToLeftLane, switchToRightLane = switchLane(RIGHT, controller)
+        else:
+            switchLaneOnNextBrokenLine = False
 
         # print(f"Mode: {mode:12s} | brokenL: {BROKEN_LINE_LEFT} | brokenR: {BROKEN_LINE_RIGHT}", flush=True)
 
