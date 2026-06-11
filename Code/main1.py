@@ -14,7 +14,7 @@ import cv2
 DEBUG = 0
 
 # turn controller on or off
-CONTROLLER_ENABLED = 0
+CONTROLLER_ENABLED = 1
 KART_SPEED = 50
 
 # broken line tracking
@@ -22,8 +22,6 @@ BROKEN_LINE_LEFT = False
 BROKEN_LINE_RIGHT = False
 lastMode = None
 modes = []
-singleLeftCounter = 0
-singleRightCounter = 0
 
 # stale value tracking for line detection
 PID_STRENGTH = 0.16
@@ -353,7 +351,7 @@ if __name__ == "__main__":
         steer = pid.compute(laneCenter, dt)
         steer = -(round((np.clip(np.interp(steer, [-PID_STRENGTH, PID_STRENGTH], [-100, 100]), -100, 100)), 2))
 
-        print(f"LaneFlag: {lineDetectionEnabled} | Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
+        # print(f"LaneFlag: {lineDetectionEnabled} | Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
 
         
         if mode == "both":
@@ -361,19 +359,11 @@ if __name__ == "__main__":
 
         if (mode == "single-left" and lastMode == "single-left"):
             modes = []
-            singleLeftCounter += 1
-            if singleLeftCounter >= 10:  # tune this threshold
-                BROKEN_LINE_RIGHT = True
-        else:
-            singleLeftCounter = 0
+            BROKEN_LINE_RIGHT = True
         
         if (mode == "single-right" and lastMode == "single-right"):
             modes = []
-            singleRightCounter += 1
-            if singleRightCounter >= 10:  # tune this threshold
-                BROKEN_LINE_LEFT = True
-        else:
-            singleRightCounter = 0
+            BROKEN_LINE_LEFT = True
         
         if len(modes) >= 20:
             BROKEN_LINE_LEFT = False
@@ -394,8 +384,6 @@ if __name__ == "__main__":
             lineDetectionEnabled, switchToLeftLane, switchToRightLane = switchLane(LEFT, controller)
         elif switchToRightLane:
             lineDetectionEnabled, switchToLeftLane, switchToRightLane = switchLane(RIGHT, controller)
-        else:
-            switchLaneOnNextBrokenLine = False
 
         # print(f"Mode: {mode:12s} | brokenL: {BROKEN_LINE_LEFT} | brokenR: {BROKEN_LINE_RIGHT}", flush=True)
         if turnFlag == False:
