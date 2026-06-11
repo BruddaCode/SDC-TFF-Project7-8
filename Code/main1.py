@@ -22,6 +22,8 @@ BROKEN_LINE_LEFT = False
 BROKEN_LINE_RIGHT = False
 lastMode = None
 modes = []
+singleLeftCounter = 0
+singleRightCounter = 0
 
 # stale value tracking for line detection
 PID_STRENGTH = 0.16
@@ -342,11 +344,19 @@ if __name__ == "__main__":
 
         if (mode == "single-left" and lastMode == "single-left"):
             modes = []
-            BROKEN_LINE_RIGHT = True
+            singleLeftCounter += 1
+            if singleLeftCounter >= 10:  # tune this threshold
+                BROKEN_LINE_RIGHT = True
+        else:
+            singleLeftCounter = 0
         
         if (mode == "single-right" and lastMode == "single-right"):
             modes = []
-            BROKEN_LINE_LEFT = True
+            singleRightCounter += 1
+            if singleRightCounter >= 10:  # tune this threshold
+                BROKEN_LINE_LEFT = True
+        else:
+            singleRightCounter = 0
         
         if len(modes) >= 20:
             BROKEN_LINE_LEFT = False
