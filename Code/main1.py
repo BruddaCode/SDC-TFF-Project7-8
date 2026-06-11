@@ -31,9 +31,9 @@ lineDetectionEnabled = True
 
 # turn tracking
 turnFlag = False
-turnDelay = 10
+turnDelay = 80
 turnCounter = 0
-turnAngle = -100
+turnAngle = -90
 
 # overtaking tracking
 LEFT = False
@@ -51,7 +51,7 @@ overtakeDuration = 10
 
 # stop sign delay tracking
 stopCounter = 0
-stopDelay = 10
+stopDelay = 300
 StopSignFlag = False
 
 # TODO: tune distance threshold
@@ -66,7 +66,7 @@ CAR_DISTANCE = 4.0
 
 
 def switchLane(direction, controller):
-    lineDetectionEnabled = None
+    lineDetectionEnabled = False
     switchToLeftLane = False
     switchToRightLane = False
     
@@ -80,7 +80,7 @@ def switchLane(direction, controller):
         lineDetectionEnabled = False
     
         controller.steer(steerAngle)
-        controller.drive(KART_SPEED) # misschien snelheid verlagen??? idfk 
+        controller.drive(KART_SPEED)
     else:
         lineDetectionEnabled = True
         switchToLeftLane = False
@@ -92,7 +92,7 @@ def switchLane(direction, controller):
 if __name__ == "__main__":
 
     if DEBUG:
-        videoPath = "2026-05-28_beelden_onderbrokenlijn"
+        videoPath = "30-04-2026_beelden_Tom"
         camM = StereoCamera(videoPath=f"{videoPath}/middle.mp4", camPos="middle")
         camL = StereoCamera(videoPath=f"{videoPath}/left.mp4", camPos="left")
         camR = StereoCamera(videoPath=f"{videoPath}/right.mp4", camPos="right")
@@ -171,7 +171,6 @@ if __name__ == "__main__":
                     case "traffic-light-green":
                         greenLight = det
                     case "person":
-                        # lowest distance gets priority
                         if person is None or det[1] < person[1]:
                             person = det
                     case "zebra-crossing":
@@ -186,18 +185,19 @@ if __name__ == "__main__":
         if stopSign:
             try:
                 if stopSign[1] < STOP_SIGN_DISTANCE:
-                    print(f"Stop sign detected at {stopSign[1]}m, stopping kart, {StopSignFlag}")
                     if controller is not None:
                         if StopSignFlag == False:
+                            print(f"Stop sign detected at {stopSign[1]}m, stopping kart, {StopSignFlag}")
                             controller.drive(0)
                             controller.brake(100)
                             StopSignFlag = True
                             lineDetectionEnabled = False
                         else:
                             stopCounter+=1
+                            print(f"Already stopped for stop sign, ignoring, counter: {stopCounter}")
                             if stopCounter >= stopDelay:
-                                stopCounter = 0
                                 print("Already stopped for stop sign, ignoring")
+                                stopCounter = 0
                                 controller.brake(0)
                                 lineDetectionEnabled = True
             except Exception as e:
@@ -247,17 +247,30 @@ if __name__ == "__main__":
         else:
             lineDetectionEnabled = True
             
-        # op basis van tijd
-        if signLeftOnly or oneWayLeft:
+        if signLeftOnly and turnFlag == False:
             try:
-                if signLeftOnly[1] < LEFT_TURN_SIGN_DISTANCE or oneWayLeft[1] < LEFT_TURN_SIGN_DISTANCE: 
+                if signLeftOnly[1] <= LEFT_TURN_SIGN_DISTANCE: 
                     lineDetectionEnabled = False
                     switchLaneOnNextBrokenLine = True
                     turnFlag = True
-                    print(f"{det[0]} at {det[1]}m, preparing to turn left")
+                    print(f"Left turn sign detected at {signLeftOnly[1]}m, preparing to turn left")
 
             except Exception as e:
                 print(f"Error getting distance for left turn sign: {e}")
+
+        if oneWayLeft and turnFlag == False:
+            try:
+                if oneWayLeft[1] <= LEFT_TURN_SIGN_DISTANCE: 
+                    lineDetectionEnabled = False
+                    switchLaneOnNextBrokenLine = True
+                    turnFlag = True
+                    print(f"One way left sign detected at {oneWayLeft[1]}m, preparing to turn left")
+
+            except Exception as e:
+                print(f"Error getting distance for one way left sign: {e}")
+
+
+        
         if turnFlag:
             if turnCounter >= turnDelay:
                 if controller is not None:
@@ -272,7 +285,7 @@ if __name__ == "__main__":
         if car:
             try:
                 if car[1] < CAR_DISTANCE:
-                    print(f"Car detected at {car[1]}m, slowing down")
+                    print(f"Car detected at {car[1]}m, overtaking")
                     overtakeCar = True
             except Exception as e:
                 print(f"Error getting distance for car: {e}")
@@ -335,10 +348,6 @@ if __name__ == "__main__":
 
         steer = pid.compute(laneCenter, dt)
         steer = -(round((np.clip(np.interp(steer, [-PID_STRENGTH, PID_STRENGTH], [-100, 100]), -100, 100)), 2))
-
-        print(f"Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
-
-        # stukje comment voor push
         
         if mode == "both":
             modes.append("both")
@@ -382,6 +391,8 @@ if __name__ == "__main__":
             switchLaneOnNextBrokenLine = False
 
         # print(f"Mode: {mode:12s} | brokenL: {BROKEN_LINE_LEFT} | brokenR: {BROKEN_LINE_RIGHT}", flush=True)
+        print(f"LineFlag: {lineDetectionEnabled} | Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
+
 
         if controller is not None and lineDetectionEnabled:
             controller.steer(steer)
@@ -409,4 +420,4 @@ if __name__ == "__main__":
 
     cv2.destroyAllWindows()
     if controller is not None:
-        controller.turnOffBus()#
+        controller.turnOffBus()
