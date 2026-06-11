@@ -124,6 +124,6 @@
             "zebra-crossing":       [3.00, false],
             "person":               [1.75, true]
         },
-        "confidenceThreshold": 0.1
+        "confidenceThreshold": 0.3
     }
 }

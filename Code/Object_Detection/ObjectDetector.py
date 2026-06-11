@@ -55,6 +55,7 @@ class ObjectDetector(threading.Thread):
     
     def estimateDistance(self, bboxSize, label):
         if label not in self.objectRealSize:
+            print(f"Unknown label for distance estimation: {label}")
             return None
         realSize, useHeight = self.objectRealSize[label]
         if useHeight:
@@ -64,6 +65,7 @@ class ObjectDetector(threading.Thread):
             bboxSize = bboxSize[0]
             focalLength = self.intrinsicsKey["fx"] * (self.width / 1920)
         if bboxSize <= 0:
+            print(f"Invalid bbox size for distance estimation: {bboxSize}")
             return None
         distance = (realSize * focalLength) / bboxSize
         return round(distance, 1)

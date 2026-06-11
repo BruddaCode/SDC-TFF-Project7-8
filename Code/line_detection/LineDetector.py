@@ -109,7 +109,7 @@ class LineDetector():
         if len(intersections) >= 2:
             chosen = max(intersections, key=lambda x: x[0])
             prog, coord = chosen
-            cv2.circle(frame, coord, 6, (0, 255, 0), -1)
+            cv2.circle(frame, coord, 6, (0, 255, 0qqq), -1)
             return (prog, frame)
         elif len(intersections) == 1:
             prog, coord = intersections[0]
