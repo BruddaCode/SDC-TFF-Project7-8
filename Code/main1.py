@@ -125,6 +125,11 @@ if __name__ == "__main__":
     prevCenter = pid.setpoint
     prevTime = time.time()
     
+    while True: 
+        if threadL.latestFrame and threadR.latestFrame and threadM.latestFrame:
+            break
+
+
     while True:
 
         # --------------------- object detection -------------------------
