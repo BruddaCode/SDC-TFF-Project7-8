@@ -1,5 +1,0 @@
-literratuur onderzoek os - Fabio
-literatuur onderzoek programeer taal - Merel
-experimenteel onderzoek camera detectie - Corné
-experimenteel onderzoek LIDAR - Hannah
-Literatuur onderzoek Object Detection Model - Tom
