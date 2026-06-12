@@ -149,10 +149,8 @@ if __name__ == "__main__":
         person = None
         zebraCrossing = None
         car = None
-        
         speedSign20 = None
         speedSign30 = None
-        SpeedSignFlag = False
 
         detections = threadM.latestDetections
         # print(f"Detections: {detections}")
@@ -181,6 +179,8 @@ if __name__ == "__main__":
                         speedSign20 = det
                     case "speed-sign-30":
                         speedSign30 = det
+                    case "forbidden-car":
+                        ForbiddenCar = det
 
         if stopSign:
             try:
@@ -269,7 +269,17 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f"Error getting distance for one way left sign: {e}")
 
+        if ForbiddenCar and turnFlag == False:
+            try:
+                if ForbiddenCar[1] < LEFT_TURN_SIGN_DISTANCE:
+                    print(f"Forbidden Car Sign detected at {ForbiddenCar[1]}m, Turning Left")
+                    if controller is not None:
+                        lineDetectionEnabled = False
+                        switchLaneOnNextBrokenLine = True
+                        turnFlag = True
 
+            except Exception as e:
+                print(f"Error getting distance for Forbidden Car Sign: {e}")
         
         if turnFlag:
             if turnCounter <= turnDelay:
@@ -285,8 +295,10 @@ if __name__ == "__main__":
         if car:
             try:
                 if car[1] < CAR_DISTANCE:
-                    print(f"Car detected at {car[1]}m, overtaking")
-                    overtakeCar = True
+                    # print(f"Car detected at {car[1]}m, overtaking")
+                    # overtakeCar = True
+                    controller.drive(0)
+                    controller.brake(100)
             except Exception as e:
                 print(f"Error getting distance for car: {e}")
 

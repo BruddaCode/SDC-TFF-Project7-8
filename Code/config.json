@@ -109,6 +109,7 @@
             "traffic-light-off":    [100, 100, 100],
             "zebra-crossing":       [255, 255, 0],
             "person":               [50, 200, 50],
+            "forbidden-car":        [255, 0, 0],
             "default":              [200, 200, 200]
         },
         "ObjectRealSize": {
@@ -122,7 +123,8 @@
             "traffic-light-red":    [0.25, true],
             "traffic-light-off":    [0.25, true],
             "zebra-crossing":       [3.00, false],
-            "person":               [1.75, true]
+            "person":               [1.75, true],
+            "forbidden-car":        [0.40, false]
         },
         "confidenceThreshold": 0.3
     }
