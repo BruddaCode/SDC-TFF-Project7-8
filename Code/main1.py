@@ -216,7 +216,6 @@ if __name__ == "__main__":
                     print(f"Green light detected at {greenLight[1]}m, go go go!")
                     if controller is not None:
                         controller.brake(0)
-                        controller.drive(KART_SPEED)
                         lineDetectionEnabled = True
             except Exception as e:
                 print(f"Error getting distance for green light: {e}")
@@ -301,9 +300,9 @@ if __name__ == "__main__":
             try:
                 if car[1] < CAR_DISTANCE:
                     # print(f"Car detected at {car[1]}m, overtaking")
-                    # overtakeCar = True
-                    controller.drive(0)
-                    controller.brake(100)
+                    overtakeCar = True
+                    # controller.drive(0)
+                    # controller.brake(100)
             except Exception as e:
                 print(f"Error getting distance for car: {e}")
 
