@@ -257,6 +257,8 @@ if __name__ == "__main__":
                     lineDetectionEnabled = False
                     switchLaneOnNextBrokenLine = True
                     turnFlag = True
+                    turnAngle = -45
+                    turnDelay = 160
                     print(f"Left turn sign detected at {signLeftOnly[1]}m, preparing to turn left")
 
             except Exception as e:
@@ -281,6 +283,8 @@ if __name__ == "__main__":
                         lineDetectionEnabled = False
                         switchLaneOnNextBrokenLine = True
                         turnFlag = True
+                        turnAngle = -90
+                        turnDelay = 80
 
             except Exception as e:
                 print(f"Error getting distance for Forbidden Car Sign: {e}")
