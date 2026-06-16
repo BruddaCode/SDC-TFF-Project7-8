@@ -56,11 +56,11 @@ StopSignFlag = False
 
 # TODO: tune distance threshold
 # detection distances
-STOP_SIGN_DISTANCE = 8.0
-TRAFFIC_LIGHT_DISTANCE = 3.0
+STOP_SIGN_DISTANCE = 9.0
+TRAFFIC_LIGHT_DISTANCE = 6.0
 ZEBRA_CROSSING_DISTANCE = 5.0
 PERSON_ON_ZEBRA_DISTANCE = 5.0
-PERSON_POSITION_THRESHOLD = 600
+PERSON_POSITION_THRESHOLD = 1000
 LEFT_TURN_SIGN_DISTANCE = 5.0
 CAR_DISTANCE = 4.0
 
@@ -235,7 +235,7 @@ if __name__ == "__main__":
             try:
                 if zebraCrossing[1] < ZEBRA_CROSSING_DISTANCE:
                     lineDetectionEnabled = False
-                    if person and person[1] < PERSON_ON_ZEBRA_DISTANCE and person[2] > PERSON_POSITION_THRESHOLD: 
+                    if person and person[1] < PERSON_ON_ZEBRA_DISTANCE and person[2] < PERSON_POSITION_THRESHOLD: 
                         print(f"Person detected on zebra crossing at {person[1]}m, stopping kart, at {person[2]}px")
                         if controller is not None:
                             controller.drive(0)
