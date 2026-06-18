@@ -113,11 +113,11 @@ if __name__ == "__main__":
     pid = PIDController()
     
     # enable synchronous stepping so we can request frames together
-    if DEBUG:
-        threadL.enable_sync_mode(True)
-        threadR.enable_sync_mode(True)
-        prevLIndex = threadL.latestIndex
-        prevRIndex = threadR.latestIndex
+    # if DEBUG:
+    #     threadL.enable_sync_mode(True)
+    #     threadR.enable_sync_mode(True)
+    #     prevLIndex = threadL.latestIndex
+    #     prevRIndex = threadR.latestIndex
     
     threadL.start()
     threadR.start()    
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     prevTime = time.time()
     
     while True: 
-        if threadL.latestFrame and threadR.latestFrame and threadM.latestFrame:
+        if threadL.latestFrame is not None and threadR.latestFrame is not None and threadM.latestFrame is not None:
             break
 
 
@@ -156,6 +156,7 @@ if __name__ == "__main__":
         car = None
         speedSign20 = None
         speedSign30 = None
+        ForbiddenCar = None
 
         detections = threadM.latestDetections
         # print(f"Detections: {detections}")
@@ -343,13 +344,13 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------
 
         # ---------------------- line detection --------------------------
-        if DEBUG:
-            threadL.request_step()
-            threadR.request_step()
-            threadL.wait_for_index(prevLIndex)
-            threadR.wait_for_index(prevRIndex)
-            prevLIndex = threadL.latestIndex
-            prevRIndex = threadR.latestIndex
+        # if DEBUG:
+        #     threadL.request_step()
+        #     threadR.request_step()
+        #     threadL.wait_for_index(prevLIndex)
+        #     threadR.wait_for_index(prevRIndex)
+        #     prevLIndex = threadL.latestIndex
+        #     prevRIndex = threadR.latestIndex
         
         leftHit  = threadL.latestIntersection
         rightHit = threadR.latestIntersection
@@ -411,8 +412,8 @@ if __name__ == "__main__":
             switchLaneOnNextBrokenLine = False
 
         # print(f"Mode: {mode:12s} | brokenL: {BROKEN_LINE_LEFT} | brokenR: {BROKEN_LINE_RIGHT}", flush=True)
-        print(f"LineFlag: {lineDetectionEnabled} | Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
-
+        # print(f"LineFlag: {lineDetectionEnabled} | Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
+        
 
         if controller is not None and lineDetectionEnabled:
             controller.steer(steer)
