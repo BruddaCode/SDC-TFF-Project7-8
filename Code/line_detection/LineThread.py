@@ -68,6 +68,8 @@ class LineThread(threading.Thread):
         else:
             self.running = False
 
+    #? this is what should sync the linedetection threads
+    # ---------------------------------------------------------------
     def enable_sync_mode(self, enable=True):
         """Enable or disable step-based synchronous processing."""
         with self._cond:
@@ -97,6 +99,8 @@ class LineThread(threading.Thread):
                     break
                 self._cond.wait(timeout=remaining)
             return self.latestIndex
+    # ---------------------------------------------------------------
+    
         
     def checkForBrokenLine(self):
         currentTime = time.time()

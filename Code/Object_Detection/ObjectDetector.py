@@ -9,6 +9,7 @@ import os
 class ObjectDetector(threading.Thread):
     def __init__(self, cam):
         super().__init__()
+        #? get general settings from config
         with open(os.path.join(os.path.dirname(__file__), '..', 'config.json'), 'r') as file:
             self.config = json.load(file)
         
@@ -45,6 +46,7 @@ class ObjectDetector(threading.Thread):
 
         self.UNDISTORTMAP = self.buildUndistortMap()
     
+    #? these 2 functions uses the camera matrix and distortion coefficients to build the undistortion map, which is used to undistort the frames from the camera
     def buildUndistortMap(self):
         matrix, _ = cv2.getOptimalNewCameraMatrix(self.cameraMatrix, self.distCoeffs, (self.width, self.height), 0, (self.width, self.height))
         map1, map2 = cv2.initUndistortRectifyMap(self.cameraMatrix, self.distCoeffs, None, matrix, (self.width, self.height), cv2.CV_16SC2)
@@ -53,6 +55,8 @@ class ObjectDetector(threading.Thread):
     def undistort(self, frame):
         return cv2.remap(frame, self.UNDISTORTMAP[0], self.UNDISTORTMAP[1], cv2.INTER_LINEAR)
     
+    #? this function estimates the distance to the detected object based on the size of the bounding box and the real size of the object, using the pinhole camera model
+    #? it is by no means perfect, but it should give a rough estimate of the distance to the object
     def estimateDistance(self, bboxSize, label):
         if label not in self.objectRealSize:
             print(f"Unknown label for distance estimation: {label}")
@@ -70,6 +74,7 @@ class ObjectDetector(threading.Thread):
         distance = (realSize * focalLength) / bboxSize
         return round(distance, 1)
 
+    #? this function draws the bounding box, label, confidence and distance on the frame for each detected object, which is handy for debugging and visualization purposes
     def drawDetection(self, frame, bboxPoints, label, color, distance, confidence):
         x1, y1 = bboxPoints[0]
         x2, y2 = bboxPoints[1]
@@ -91,6 +96,9 @@ class ObjectDetector(threading.Thread):
             cv2.putText(frame, distanceText, (x1, y1 - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
         return frame
 
+    #? this function processes the detections from the model
+    #? extracts the relevant information, estimates the distance and draws the results on the frame
+    #? which is then stored as the latest frame and detections for use by other parts of the code
     def processDetections(self, frame, detections):
         boxes = detections[0].boxes
         drawnFrame = frame.copy()
