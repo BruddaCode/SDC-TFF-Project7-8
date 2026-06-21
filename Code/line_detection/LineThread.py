@@ -44,11 +44,16 @@ class LineThread(threading.Thread):
             self.detector = LineDetector(np.sqrt((self.lineKey["B"]["x"] - self.lineKey["A"]["x"])**2 + (self.lineKey["B"]["y"] - self.lineKey["A"]["y"])**2), self.A, self.B, False)
 
     # dont try to simplify this, it just breaks somehow, and i have no idea why
+    # will turn diagonal reference line into coordinates that represent the same pixels as the main frame
+    # but on the coordinate system off the roi
     def toRoi(self, point, roi):
         x0, y0, _, _ = roi
         x, y = point
         return (x - x0, y - y0)
-    
+
+    # this function draws the shape chosen for the roi and fits a rectangle around it
+    # this is because rectangles are the only shapes a frame can be
+    # the calculations on the other hand will only be done over pixels inside the chosen shape
     def applyRoi(self, frame):
         x, y, w, h = self.roiBounds
         roiFrame = frame[y:y+h, x:x+w]
@@ -58,6 +63,10 @@ class LineThread(threading.Thread):
         maskedRoiFrame = cv2.bitwise_and(roiFrame, roiFrame, mask=mask)
         return roiFrame, maskedRoiFrame, mask, (x, y, w, h)
 
+    # quite literally the java Thread.stop function but safe
+    # it turns the running flag false which is used to see if the while loop needs to keep running
+    # this way it stops at the end of the while loop and not halfway through
+    # if the code is running on videos it also notifies the other threads it will stop
     def stop(self):
         # stop thread and notify any waiters and step requests
         if self.sync_mode:
@@ -101,7 +110,8 @@ class LineThread(threading.Thread):
             return self.latestIndex
     # ---------------------------------------------------------------
     
-        
+    # a very simplified way of checking for a broken line, which doesn't always seem to work the way intended
+    # definetly needs some work  
     def checkForBrokenLine(self):
         currentTime = time.time()
         if currentTime - self.lastHitTime >= self.breakThreshold:
@@ -110,6 +120,7 @@ class LineThread(threading.Thread):
         if currentTime - self.lastHitTime >= self.lineThreshold:
             self.brokenLine = False
 
+    # main code from the threads
     def run(self):
         while self.running:
             # if in sync mode, wait until a step is requested
@@ -150,7 +161,7 @@ class LineThread(threading.Thread):
             else:
                 self.latestFrame = frame
                 self.latestIntersection = intersection
-                
+  
             if intersection is not None:
                 self.lastHitTime = time.time()
             self.checkForBrokenLine()
