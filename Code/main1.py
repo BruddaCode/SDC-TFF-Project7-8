@@ -8,12 +8,19 @@ import numpy as np
 import time
 import cv2
 
+#? what debug mode does:
+#? - if debug mode is on, it will use the videos instead of the cameras, 
+#? and it will enable synchronous stepping for the line detection threads, 
+#? so that the frames are processed together
+
 # turn frame sync on or off
 # 0 = off
 # 1 = on
 DEBUG = 1
 
+
 # turn controller on or off
+#? controller in this case is the code that send messages to the CAN bus
 CONTROLLER_ENABLED = 0
 KART_SPEED = 50
 
@@ -26,10 +33,15 @@ singleLeftCounter = 0
 singleRightCounter = 0
 
 # stale value tracking for line detection
+#? the lower the number, the more aggressive the kart will steer
+#? keep the number between 0.1 and 0.3. or dont ¯\_(ツ)_/¯
 PID_STRENGTH = 0.16
 lineDetectionEnabled = True
 
 # turn tracking
+#? turnDelay is the amount of cycles through the while loop that the kart will spend turning, 
+#? so the higher the number, the longer the kart will turn for.
+#? turnAngle is the angle that the kart will steer while turning, so the higher the number, the sharper the turn will be.
 turnFlag = False
 turnDelay = 80
 turnCounter = 0
@@ -50,6 +62,7 @@ stepTwoStart = 0
 overtakeDuration = 10
 
 # stop sign delay tracking
+#? stopDelay is the number of cycles through the while loop that the kart will be stopped
 stopCounter = 0
 stopDelay = 300
 StopSignFlag = False
@@ -64,7 +77,8 @@ PERSON_POSITION_THRESHOLD = 1000
 LEFT_TURN_SIGN_DISTANCE = 5.0
 CAR_DISTANCE = 4.0
 
-
+#? cool function that should be able to make te kart switch lanes.
+#? sadly this doesnt work as we didnt have enough time to correctly implement it.
 def switchLane(direction, controller):
     lineDetectionEnabled = False
     switchToLeftLane = False
@@ -112,6 +126,7 @@ if __name__ == "__main__":
 
     pid = PIDController()
     
+    #? this is commented out because if it isnt the code wont run for some reason.
     # enable synchronous stepping so we can request frames together
     # if DEBUG:
     #     threadL.enable_sync_mode(True)
@@ -125,13 +140,16 @@ if __name__ == "__main__":
     prevCenter = pid.setpoint
     prevTime = time.time()
     
+    #? this makes sure that the main code can only run once all threads have a frame.
+    #? otherwise the kart would just start driving like a blind man.
     while True: 
         if threadL.latestFrame is not None and threadR.latestFrame is not None and threadM.latestFrame is not None:
             break
 
 
     while True:
-
+        
+        #? a small manifesto on the whole object detection and decision making part of the code
         # --------------------- object detection -------------------------
         # for object detection, the things that still need changing are:
         # - the distance thresholds for each object (currently 5m for everything, but should be different for each object) -> 3m?
@@ -146,6 +164,7 @@ if __name__ == "__main__":
         # - when persons are detected (and "zebrapad") from right to left walk, or wait, for a specified amount of time (10seconds? or so) -> vorige groep deed op basis van frames... wisselvallig, denk t is beter om te hardcoden
         # - prioritieten stellen (zelfmoord of niet zelfmoord) -> else ifs, met afstand geimplementeerd, zodat dingen niet genegeerd worden.
 
+        #? we make it none each time so that only objects that are detected in the current frame will be considered in the decision making
         oneWayLeft = None
         stopSign = None
         signLeftOnly = None
@@ -160,7 +179,8 @@ if __name__ == "__main__":
 
         detections = threadM.latestDetections
         # print(f"Detections: {detections}")
-
+        
+        #? this is where the None values are assigned to the detected objects
         if detections is not None:
             for det in detections:
                 match det[0]:
@@ -175,6 +195,8 @@ if __name__ == "__main__":
                     case "traffic-light-green":
                         greenLight = det
                     case "person":
+                        #? if there are multiple persons, we want to consider the closest one, so we check if the current person is closer than the previously assigned person
+                        #? we havent had time to fully test this so please do
                         if person is None or det[1] < person[1]:
                             person = det
                     case "zebra-crossing":
@@ -188,6 +210,18 @@ if __name__ == "__main__":
                     case "forbidden-car":
                         ForbiddenCar = det
 
+        #? now for the decision making, which was a bit rushed to please refactor this and make it better.
+        #? but the general idea is this:
+        #? check if the object exists
+        #? if it does, check the distance
+        #? if the distance is below the threshold, take the appropriate action (stop, slow down, prepare to turn, etc.)
+        
+        #? the zebra crossing and person detection are a bit more complex, because we want to check if the person is on the zebra crossing
+        #? and if they are, we want to stop, but if they are not, we just want to slow down. so we check the distance of the zebra crossing
+        #? and if it is below the threshold, we check if there is a person, and if there is, we check their distance and position to determine if they are on the zebra crossing or not.
+        #? threshold in this case is where the middle of the person is on the screen in pixels.
+        #? so if the person starts on the left, that person should be around 1000px, and if the person starts on the right, that person should be around 200px.
+        
         if stopSign:
             try:
                 if stopSign[1] < STOP_SIGN_DISTANCE:
@@ -290,6 +324,7 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f"Error getting distance for Forbidden Car Sign: {e}")
         
+        #? this is what causes the kart to turn, it sets the turnFlag to true, which then causes the kart to turn for a certain amount of time, and then reset the flag and counter.
         if turnFlag:
             if turnCounter <= turnDelay:
                 if controller is not None:
@@ -300,7 +335,12 @@ if __name__ == "__main__":
                 lineDetectionEnabled = True
                 turnFlag = False
                 turnCounter = 0
-                
+        
+        #? this is the overtaking code, which is also a bit rushed and not fully tested, but the general idea is this:
+        #? if a car is detected and is within the distance threshold, we set the overtakeCar flag to true, 
+        #? which then causes the kart to switch lanes, wait for a certain amount of time, and then switch back. 
+        #? the switching is done by setting the switchToLeftLane or switchToRightLane flag to true, which then causes the kart to switch lanes when it detects a broken line.
+        #? the timing is done by using the time module to track how long the kart has been in the overtaking state, and then switching back after a certain amount of time has passed.    
         if car:
             try:
                 if car[1] < CAR_DISTANCE:
@@ -344,6 +384,7 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------
 
         # ---------------------- line detection --------------------------
+        #? this is commented out because if it isnt the code wont run for some reason.
         # if DEBUG:
         #     threadL.request_step()
         #     threadR.request_step()
@@ -355,7 +396,9 @@ if __name__ == "__main__":
         leftHit  = threadL.latestIntersection
         rightHit = threadR.latestIntersection
         currTime = time.time()
-
+        
+        #? this is where we check for hits and update the last hit values, and also determine the mode (both, single-left, single-right, or none)
+        #? the mode is used to determine how to compute the lane center, which is then used for the PID controller to compute the steering angle.
         mode, laneCenter = threadL.detector.checkForHit(leftHit, rightHit, currTime, prevCenter)
         lastLeftHit = threadL.detector.lastLeftHit
         lastRightHit = threadL.detector.lastRightHit
@@ -411,17 +454,18 @@ if __name__ == "__main__":
         else:
             switchLaneOnNextBrokenLine = False
 
+        #? big print to see all the relevant information for debugging
         # print(f"Mode: {mode:12s} | brokenL: {BROKEN_LINE_LEFT} | brokenR: {BROKEN_LINE_RIGHT}", flush=True)
         # print(f"LineFlag: {lineDetectionEnabled} | Mode: {mode:12s} | L: {str(round(lastLeftHit, 2)) if lastLeftHit is not None else 'None':>5} | R: {str(round(lastRightHit, 2)) if lastRightHit is not None else 'None':>5} | Center: {laneCenter:.2f} | Steer: {steer}", flush=True)
         
-
+        #? this is what the code always does unless turned off when doing a maneuver
         if controller is not None and lineDetectionEnabled:
             controller.steer(steer)
             controller.drive(KART_SPEED)
         
         # ----------------------------------------------------------------
 
-        
+        #? this shows you what the code sees
         if threadL.latestFrame is not None:
             cv2.imshow("left", threadL.latestFrame)
 
@@ -431,6 +475,8 @@ if __name__ == "__main__":
         if threadM.latestFrame is not None:
             cv2.imshow("middle", threadM.latestFrame)
 
+        #? this stops the code when you press Q while focused on one of the windows
+        #? CTRL+C also works but hey, whatever works best for you. 
         if cv2.waitKey(30) & 0xFF == ord('q'):
             threadL.stop()
             threadR.stop()
@@ -438,7 +484,7 @@ if __name__ == "__main__":
             break
     
         
-
+    #? this just makes sure that all windows are closed and the connection to the CAN bus is closed when the code is stopped.
     cv2.destroyAllWindows()
     if controller is not None:
         controller.turnOffBus()

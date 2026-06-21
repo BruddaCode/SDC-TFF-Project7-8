@@ -6,6 +6,7 @@ import os
 
 class StereoCamera():
     def __init__(self, index = None, videoPath = None, camPos = None):
+        #? get general camera settings from config
         with open(os.path.join(os.path.dirname(__file__), '..', 'config.json'), 'r') as file:
             self.config = json.load(file)
             
@@ -45,6 +46,8 @@ class StereoCamera():
             return None        
         return frame
     
+    #? this cool little function gets the camera id based on the name of the camera. 
+    #? so you dont have to guess which ids or whatever are the correct ones for the cameras
     @staticmethod
     def getCameraId(cameraName=None):
         if cameraName is None:
