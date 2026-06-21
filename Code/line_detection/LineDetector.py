@@ -35,6 +35,9 @@ class LineDetector():
         self.lastLeftTime  = 0.0
         self.lastRightTime = 0.0
 
+    # calculates to see if the given lines intersect
+    # A and B are a line and C and D are a line, both lines are finite
+    # A, B, C and D should be the endpoints of your line and not just any random points on your line
     def intersect(self, A, B, C, D):
         x1, y1 = A
         x2, y2 = B
@@ -61,6 +64,10 @@ class LineDetector():
         max_y = max(P[1], Q[1]) + epsilon
         return min_x <= px <= max_x and min_y <= py <= max_y
     
+    # this function calculates how far along the reference line the intersection is
+    # for this we give the referenceline a length of 1
+    # the closer to 1, the closer to the kart the intersection was
+    # the calculation is just pythagoras, since we are calculating the length of diagonal lines
     def lineProgress(self, intersection):
         if self.side:
             length = np.sqrt((self.bumperA[0] - intersection[0])**2 + (self.bumperA[1] - intersection[1])**2)
@@ -69,6 +76,7 @@ class LineDetector():
             length = np.sqrt((self.bumperA[0] - intersection[0])**2 + (self.bumperA[1] - intersection[1])**2)
             return 1 - length / self.lengthReferenceLine
 
+    # taking all the necesary steps to prepare the frame for the houghlines transform
     def processFrame(self, frame):
                 
         # convert to hls and apply CLAHE to the lightness channel
@@ -86,15 +94,18 @@ class LineDetector():
         frame = cv2.Canny(frame, self.cannyKey["threshold1"], self.cannyKey["threshold2"], self.cannyKey["apertureSize"])
         
         frame = cv2.filter2D(frame, -1, self.filterKernel)
-        
+
         return frame
     
+    # main function of the LineDetector class, returns the intersection with the referenceline and how far along that line it is
     def getIntersection(self, frame, pointA, pointB):
         # collect (progress, (x, y)) pairs for each intersection
         intersections = []
         processed = self.processFrame(frame)
         lines = cv2.HoughLinesP(processed, self.houghKey["rho"], (np.pi/self.houghKey["theta"]), self.houghKey["threshold"], self.houghKey["lines"], self.houghKey["minLineLength"], self.houghKey["maxLineGap"])
 
+        # take each line returned by the houghlines transform and calculate its intersection
+        # if it intersects the reference line, calculate its progress along the reference line and add to the array
         if lines is not None:
             for line in lines:
                 x1, y1, x2, y2 = line[0]
@@ -107,6 +118,7 @@ class LineDetector():
                     intersections.append((progress, (ix, iy)))
 
         # return the chosen intersection and draw only that one
+        # the chosen intersection is the on closest to the kart as this will most of the time be the inside part of the white line
         if len(intersections) >= 2:
             chosen = max(intersections, key=lambda x: x[0])
             prog, coord = chosen
@@ -119,6 +131,10 @@ class LineDetector():
 
         return (None, frame)
 
+    # function to check if either of the side cameras saw a line
+    # this fucntion calculates where the centre of the kart currently is, calls this laneCentre and returs it for the PID to compute
+    # also returns the mode of which side it saw a line
+    # different modes being, both, single-left, single-right, or lost
     def checkForHit(self, leftHit, rightHit, currTime, prevCenter):
         # update stored values if we have fresh detections
         if leftHit is not None:
@@ -132,6 +148,7 @@ class LineDetector():
         leftValid  = self.lastLeftHit  is not None and (currTime - self.lastLeftTime)  < self.MAX_STALE_TIME
         rightValid = self.lastRightHit is not None and (currTime - self.lastRightTime) < self.MAX_STALE_TIME
 
+        # check for which mode to return and calculate the to return laneCentre
         if leftValid and rightValid:
             width = self.lastLeftHit + self.lastRightHit
             if width > self.laneWidth:
