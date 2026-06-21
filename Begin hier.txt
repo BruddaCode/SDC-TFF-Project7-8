@@ -1,0 +1,23 @@
+Welkom bij de opleverset van de RDW self driving challenge Gesloten categorie 2026.
+
+In dit document zal staan ik welke folders de verschillende documenten te vinden zijn.
+
+Ik adviseer om te beginnen met het document "SDC project omschrijving.docx" gevolgd door de demovideo. Hierdoor kom je te weten wat dit project inhoud en wat het doet.
+
+Voor de volgende groep die aan dit project gaat werken raad ik aan het document "Overdracht.docx" te lezen. Hierin staat wat nog gedaan moet worden en wat wij jullie kunnen adviseren.
+
+Hieronder zal aangegeven worden wat er in welke folder te vinden is:
+
+>Beeldmateriaal
+	- Hierin zijn de relevant testvideo's en de demovideo te vinden.
+>Code
+	- Hierin is de code waar de kart op gereden heeft. In de code is te vinden hoe deze werkt.
+>Documentatie
+	>Manage&Control
+		- Hierin is de productbacklog, requirement analyse, risico analyse en stakeholders analyse te vinden.
+	>Ontwerpen
+		- Hierin is de poster, architectuur diagram en de flowchart te vinden.
+	>Verslagen
+		- Hierin zijn de geschreven verslagen voor het project te vinden
+>presentaties
+	- Hierin zijn de sprint presentaties te vinden.
