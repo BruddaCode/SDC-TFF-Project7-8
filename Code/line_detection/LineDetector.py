@@ -57,6 +57,7 @@ class LineDetector():
 
         return (int(px), int(py))
     
+    #? checks if the intersection point is within the bounds of the ROI
     def within_segment(self, px, py, P, Q, epsilon=1.0):
         min_x = min(P[0], Q[0]) - epsilon
         max_x = max(P[0], Q[0]) + epsilon
